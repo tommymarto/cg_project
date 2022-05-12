@@ -1,0 +1,23 @@
+{
+  "name": "cg_project",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start-dev": "browser-sync start --server \".\" --files \"**\" --open \"./public/index.html\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tommymarto/cg_project.git"
+  },
+  "author": "Tommaso Martorella (tom.martorella@gmail.com)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tommymarto/cg_project/issues"
+  },
+  "homepage": "https://github.com/tommymarto/cg_project#readme",
+  "dependencies": {
+    "browser-sync": "^2.27.9"
+  }
+}

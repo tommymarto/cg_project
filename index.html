@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>CG Project</title>
+</head>
+
+<body style="height: 100vh; margin: 0;">
+    <div style="display: flex; flex-direction: column; padding: 5px; max-height: 98vh;">
+        <div style="display: flex; flex-direction: row; margin-bottom: 10px;">
+            <canvas id="canvas"
+                style="width: 1024px; height: 576px; border-style: solid; border-color: black; border-width: 1px;">
+            </canvas>
+        </div>
+        <div id="logs"
+            style="background: #cccccc80; border: 1px solid black; min-height: 50px; padding: 10px; overflow-y: scroll; height: 100vh">
+            <div style="font-weight: bold; font-size: large; margin-bottom: 10px;">Logs:</div>
+        </div>
+    </div>
+    <script type="module" src="./js/main.js"></script>
+</body>
+
+</html>
