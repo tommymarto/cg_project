@@ -2,33 +2,33 @@ import { ground, Ground } from "./ground.js";
 // import { objs, Obj } from "./obj.js";
 import { car, Car } from "./car.js";
 import { skyboxes, Skybox } from "./skybox.js";
-import { objs, ObjObj } from "./obj_obj.js";
+import { objs, Obj } from "./obj.js";
 
 const objGroups = [
-    {
-        name: "ground",
-        setupDraw: Ground.setupDraw,
-        teardownDraw: Ground.teardownDraw,
-        elements: [ground],
-    },
     // {
     //     name: "objs",
     //     setupDraw: Obj.setupDraw,
     //     teardownDraw: Obj.teardownDraw,
     //     elements: [...objs],
     // },
-    // {
-    //     name: "car",
-    //     setupDraw: Car.setupDraw,
-    //     teardownDraw: Car.teardownDraw,
-    //     elements: [car],
-    // },
+    {
+        name: "car",
+        setupDraw: Car.setupDraw,
+        teardownDraw: Car.teardownDraw,
+        elements: [car],
+    },
     {
         name: "objs",
-        setupDraw: ObjObj.setupDraw,
-        teardownDraw: ObjObj.teardownDraw,
+        setupDraw: Obj.setupDraw,
+        teardownDraw: Obj.teardownDraw,
         elements: [...objs],
-    }
+    },
+    {
+        name: "ground",
+        setupDraw: Ground.setupDraw,
+        teardownDraw: Ground.teardownDraw,
+        elements: [...ground],
+    },
 ];
 
 const skyboxesGroup = {

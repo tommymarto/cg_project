@@ -19,6 +19,16 @@ export class Drawable {
                 value: gl.createBuffer(),
                 dirty: true,
             },
+            texCoord: {
+                value: gl.createBuffer(),
+                dirty: true,
+            },
+            normal: {
+                value: gl.createBuffer(),
+                dirty: true,
+            },
+
+            // TODO: delete these ones
             color: {
                 value: gl.createBuffer(),
                 dirty: true,

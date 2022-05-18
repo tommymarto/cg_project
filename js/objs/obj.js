@@ -1,7 +1,52 @@
 import { Mat4, Vec3 } from "https://cdn.jsdelivr.net/npm/webgl-basic-lib@latest/lib/all.min.js";
 import { Drawable } from "../drawable.js";
+import { loadObj, loadTexture } from "../utils.js";
+import logger from "../logger.js";
 
 export class Obj extends Drawable {
+    async setup(/** @type {WebGLRenderingContext} */ gl, isChild = false) {
+        super.setup(gl);
+
+        if (!isChild) {
+
+            if (this.data.urls.obj) {
+                const objs = await loadObj(this.data.urls.obj);
+                const mainObj = objs[0];
+
+                console.log(mainObj)
+
+                this.data = {
+                    ...this.data,
+                    vertices: new Float32Array(mainObj.vertices),
+                    texCoords: new Float32Array(mainObj.texCoords),
+                    normals: new Float32Array(mainObj.texCoords),
+                }
+            }
+
+            this.texture = gl.createTexture();
+            loadTexture(gl, this.texture, this.data.urls.texture, {
+                textureKind: gl.TEXTURE_2D,
+                target: gl.TEXTURE_2D,
+                mipmap: true
+            })
+
+            if (this.data.urls.obj) {
+                this.children = objs.map(obj => {
+                    const child = new Obj({
+                        vertices: new Float32Array(obj.vertices),
+                        texCoords: new Float32Array(obj.texCoords),
+                        normals: new Float32Array(obj.normals),
+                    }, this.mat);
+
+                    child.texture = this.texture;
+                    return child;
+                })
+
+                await Promise.all(this.children.map(child => child.setup(gl, true)));
+            }
+        }
+    }
+
     draw(/** @type {WebGLRenderingContext} */ gl, stack) {
         gl.useProgram(Obj.programShader);
 
@@ -14,62 +59,74 @@ export class Obj extends Drawable {
         gl.enableVertexAttribArray(0);
         gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
 
-        // color
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.color.value);
-        if (this.buffers.color.dirty) {
-            this.buffers.color.dirty = false;
-            gl.bufferData(gl.ARRAY_BUFFER, this.data.colors, gl.STATIC_DRAW);
+        // texCoord
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.texCoord.value);
+        if (this.buffers.texCoord.dirty) {
+            this.buffers.texCoord.dirty = false;
+            gl.bufferData(gl.ARRAY_BUFFER, this.data.texCoords, gl.STATIC_DRAW);
         }
         gl.enableVertexAttribArray(1);
-        gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0);
 
-        // indices
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.buffers.element.value);
-        if (this.buffers.element.dirty) {
-            this.buffers.element.dirty = false;
-            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.data.indices, gl.STATIC_DRAW);
+        // normal
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.normal.value);
+        if (this.buffers.normal.dirty) {
+            this.buffers.normal.dirty = false;
+            gl.bufferData(gl.ARRAY_BUFFER, this.data.normals, gl.STATIC_DRAW);
         }
+        gl.enableVertexAttribArray(2);
+        gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 0, 0);
 
         // set uniforms
         const actualMat = stack.push(this.mat);
         gl.uniformMatrix4fv(Obj.uniformLocations.uMat, false, actualMat.values);
         stack.pop();
 
+        // bind texture
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        gl.uniform1i(Obj.uniformLocations.uTexture, 0);
+
         // draw
-        gl.drawElements(gl[Obj.glMode], this.data.indices.length, gl.UNSIGNED_SHORT, 0);
+        gl.drawArrays(gl[Obj.glMode], 0, this.data.vertices.length / 3);
 
         // disable vertexAttribArray
         gl.disableVertexAttribArray(0);
-        gl.disableVertexAttribArray(1);
 
         // unbind buffer
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-    }
 
+        if (this.children) {
+            this.children.forEach(child => child.draw(gl, stack));
+        }
+    }
 
     static glMode = "TRIANGLES";
     static vertexShaderSource = `
     precision mediump float;
     attribute vec3 aPosition;
-    attribute vec3 aColor;
+    attribute vec2 aTexCoord;
+    attribute vec3 aNormal;
   
     uniform mat4 uMat;
   
-    varying vec3 vColor;
+    varying vec2 vTexCoord;
   
     void main(void) {
-        vColor = aColor;
+        vTexCoord = aTexCoord;
         gl_Position = uMat * vec4(aPosition, 1.0);
     }
     `
     static fragmentShaderSource = `
     precision mediump float;
 
-    varying vec3 vColor;
+    varying vec2 vTexCoord;
+
+    uniform sampler2D uTexture;
 
     void main(void) {
-        gl_FragColor = vec4(vColor, 1);
+        vec3 color = texture2D(uTexture, vTexCoord).rgb;
+        gl_FragColor = vec4(color, 1.0);
     }
     `
 
@@ -77,11 +134,14 @@ export class Obj extends Drawable {
     static async setupDraw(/** @type {WebGLRenderingContext} */ gl) {
         await Drawable._setupDraw.bind(Obj)(gl, async (/** @type {WebGLProgram} */ program) => {
             gl.bindAttribLocation(program, 0, "aPosition");
-            gl.bindAttribLocation(program, 1, "aColor");
+            gl.bindAttribLocation(program, 1, "aTexCoord");
+            gl.bindAttribLocation(program, 2, "aNormal");
         });
 
         gl.useProgram(Obj.programShader);
         Obj.uniformLocations.uMat = gl.getUniformLocation(Obj.programShader, "uMat");
+        Obj.uniformLocations.uTexture = gl.getUniformLocation(Obj.programShader, "uTexture");
+
     }
     static teardownDraw(/** @type {WebGLRenderingContext} */ gl) {
         gl.useProgram(null);
@@ -90,92 +150,14 @@ export class Obj extends Drawable {
 
 const objs = [
     // cube 1
-    new Obj({
-        vertices: new Float32Array([
-            // x,  y,  z,   r,   g,   b
-            // front face
-            -1, -1, 1,
-            -1, 1, 1,
-            1, -1, 1,
-            1, 1, 1,
-            // right face
-            1, -1, -1,
-            1, 1, -1,
-            1, -1, 1,
-            1, 1, 1,
-            // left face
-            -1, -1, -1,
-            -1, 1, -1,
-            -1, -1, 1,
-            -1, 1, 1,
-            // upper face
-            -1, 1, -1,
-            -1, 1, 1,
-            1, 1, -1,
-            1, 1, 1,
-            // bottom face
-            -1, -1, -1,
-            -1, -1, 1,
-            1, -1, -1,
-            1, -1, 1,
-            // rear face
-            -1, -1, -1,
-            -1, 1, -1,
-            1, -1, -1,
-            1, 1, -1,
-        ]),
-        indices: new Uint16Array([
-            0, 1, 2,
-            1, 2, 3,
-
-            4, 5, 6,
-            5, 6, 7,
-
-            8, 9, 10,
-            9, 10, 11,
-
-            12, 13, 14,
-            13, 14, 15,
-
-            16, 17, 18,
-            17, 18, 19,
-
-            20, 21, 22,
-            21, 22, 23
-        ]),
-        colors: new Float32Array([
-            // front face
-            1, 1, 1,
-            1, 1, 1,
-            1, 1, 1,
-            1, 1, 1,
-            // right face
-            0, 156 / 255, 70 / 255,
-            0, 156 / 255, 70 / 255,
-            0, 156 / 255, 70 / 255,
-            0, 156 / 255, 70 / 255,
-            // left face
-            0, 68 / 255, 175 / 255,
-            0, 68 / 255, 175 / 255,
-            0, 68 / 255, 175 / 255,
-            0, 68 / 255, 175 / 255,
-            // upper face
-            184 / 255, 10 / 255, 49 / 255,
-            184 / 255, 10 / 255, 49 / 255,
-            184 / 255, 10 / 255, 49 / 255,
-            184 / 255, 10 / 255, 49 / 255,
-            // bottom face
-            1, 87 / 255, 0,
-            1, 87 / 255, 0,
-            1, 87 / 255, 0,
-            1, 87 / 255, 0,
-            // rear face
-            1, 214 / 255, 0,
-            1, 214 / 255, 0,
-            1, 214 / 255, 0,
-            1, 214 / 255, 0,
-        ]),
-    }, Mat4.Identity().translate(new Vec3(4, 1, 4)).scale(new Vec3(0.5, 0.5, 0.5))),
+    new Obj(
+        {
+            urls: {
+                obj: "../../assets/objs/cube/cube.obj",
+                texture: [0xff, 0x00, 0x00, 0xff],
+            },
+        }
+        , Mat4.Identity().translate(new Vec3(4, 1, 4)).scale(new Vec3(0.5, 0.5, 0.5))),
 ]
 
 export { objs };

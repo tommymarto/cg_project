@@ -75,7 +75,8 @@ function parseObj(/** @type {string} */text) {
             case "s":
             case "g":
             case "mtllib":
-            case "usemtl": {
+            case "usemtl":
+            case "": {
                 // ignore smoothing group, group and materials
                 break;
             }
@@ -86,7 +87,57 @@ function parseObj(/** @type {string} */text) {
         }
     });
 
-    console.log(objs);
+    console.log("Loaded objs:", objs);
 
     return objs;
+}
+
+export function loadTexture(/** @type {WebGLRenderingContext} */ gl, tex, source, options) {
+    gl.bindTexture(options.textureKind, tex);
+    gl.texImage2D(options.target, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0xff, 0xff, 0xff, 0xff]));
+    gl.bindTexture(options.textureKind, null);
+
+    return new Promise((res, rej) => {
+        if (typeof source == "string") {
+            let image = new Image();
+            image.onload = () => {
+                gl.bindTexture(options.textureKind, tex);
+
+                gl.texImage2D(options.target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+
+                gl.texParameteri(options.textureKind, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                gl.texParameteri(options.textureKind, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                gl.texParameteri(options.textureKind, gl.TEXTURE_WRAP_S, options.textureWrap ?? gl.CLAMP_TO_EDGE);
+                gl.texParameteri(options.textureKind, gl.TEXTURE_WRAP_T, options.textureWrap ?? gl.CLAMP_TO_EDGE);
+
+                if (options.mipmap) {
+                    gl.texParameteri(options.textureKind, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+                    gl.generateMipmap(options.textureKind);
+                }
+
+                gl.bindTexture(options.textureKind, null);
+
+                logger.d(`Texture: Loaded ${source}`);
+                res();
+            }
+            image.onerror = () => {
+                err("Error loading texture");
+            }
+
+            image.src = source;
+        } else if (Array.isArray(source)) {
+            gl.bindTexture(options.target, tex);
+            gl.texImage2D(options.target, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(source));
+            gl.bindTexture(options.target, null);
+            logger.d(`Texture: Loaded raw`);
+            res();
+        } else {
+            rej("Invalid texture source");
+        }
+    })
+
+}
+
+export function zip(a, b) {
+    return a.map((k, i) => ({ first: k, second: b[i] }));
 }

@@ -2,7 +2,6 @@ import { Mat4, MatrixStack, toRad, Vec3, Vec4 } from "https://cdn.jsdelivr.net/n
 import logger from "./logger.js";
 import { registerCamerasDropdown, registerSkyboxesDropdown } from "./main.js";
 import { objGroups, skyboxesGroup } from "./objs/index.js";
-import { loadObj } from "./obj_loader.js";
 
 const fpsDiv = document.getElementById('fps-counter');
 
@@ -18,6 +17,7 @@ export default class App {
     constructor(gl) {
         /** @type {WebGLRenderingContext} */
         this.gl = gl;
+        // this.gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     }
 
     async run() {
@@ -26,6 +26,7 @@ export default class App {
 
         for (const obj of objGroups) {
             for (const el of obj.elements) {
+                console.log(obj)
                 await el.setup(this.gl)
                 if (el.cameras) {
                     this.cameras.push(...el.cameras);
@@ -39,8 +40,8 @@ export default class App {
         registerCamerasDropdown(this);
         registerSkyboxesDropdown(this, skyboxesGroup);
 
-        // const drawInterval = setInterval(() => {
-        const drawInterval = setTimeout(() => {
+        const drawInterval = setInterval(() => {
+            // const drawInterval = setTimeout(() => {
             if (this.isRunning) {
                 window.requestAnimationFrame(() => {
                     const now = performance.now();
