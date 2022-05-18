@@ -1,17 +1,28 @@
-import { Mat4, Vec3 } from "https://cdn.jsdelivr.net/npm/webgl-basic-lib@latest/lib/all.min.js";
+import { Mat4, Vec3, toRad } from "https://cdn.jsdelivr.net/npm/webgl-basic-lib@latest/lib/all.min.js";
 import { Drawable } from "../drawable.js";
 import { loadObj, loadTexture } from "../utils.js";
 import logger from "../logger.js";
 
 export class Obj extends Drawable {
+    constructor(data, mat = new Mat4(), textureOptions) {
+        super(data, mat);
+        this.textureOptions = textureOptions;
+    }
+
     async setup(/** @type {WebGLRenderingContext} */ gl, isChild = false) {
         super.setup(gl);
 
         if (!isChild) {
+            this.texture = gl.createTexture();
+            loadTexture(gl, this.texture, this.data.urls.texture, {
+                textureKind: gl.TEXTURE_2D,
+                target: gl.TEXTURE_2D,
+                mipmap: true
+            })
 
             if (this.data.urls.obj) {
                 const objs = await loadObj(this.data.urls.obj);
-                const mainObj = objs[0];
+                const mainObj = objs.shift(1);
 
                 console.log(mainObj)
 
@@ -21,16 +32,7 @@ export class Obj extends Drawable {
                     texCoords: new Float32Array(mainObj.texCoords),
                     normals: new Float32Array(mainObj.texCoords),
                 }
-            }
 
-            this.texture = gl.createTexture();
-            loadTexture(gl, this.texture, this.data.urls.texture, {
-                textureKind: gl.TEXTURE_2D,
-                target: gl.TEXTURE_2D,
-                mipmap: true
-            })
-
-            if (this.data.urls.obj) {
                 this.children = objs.map(obj => {
                     const child = new Obj({
                         vertices: new Float32Array(obj.vertices),
@@ -150,14 +152,66 @@ export class Obj extends Drawable {
 
 const objs = [
     // cube 1
+    // new Obj(
+    //     {
+    //         urls: {
+    //             obj: "../../assets/objs/cube/cube.obj",
+    //             texture: [0xff, 0x00, 0x00, 0xff],
+    //         },
+    //     }
+    //     , Mat4.Identity().translate(new Vec3(4, 1, 4)).scale(new Vec3(0.5, 0.5, 0.5))),
     new Obj(
         {
             urls: {
-                obj: "../../assets/objs/cube/cube.obj",
-                texture: [0xff, 0x00, 0x00, 0xff],
+                obj: "../../assets/objs/buildings/building1/Cottage_FREE.obj",
+                texture: "../../assets/textures/buildings/building1/Cottage_Dirt_Base_Color.png",
             },
         }
-        , Mat4.Identity().translate(new Vec3(4, 1, 4)).scale(new Vec3(0.5, 0.5, 0.5))),
+        , Mat4.Identity()
+            .scale(new Vec3(2, 2, 2))
+            .rotate(toRad(90), new Vec3(0, 1, 0))
+            .translate(new Vec3(0, 0, 10))),
+    new Obj(
+        {
+            urls: {
+                obj: "../../assets/objs/lights/streetlight/streetlight.obj",
+                texture: "../../assets/textures/lights/streetlight/color.jpg",
+            },
+        }
+        , Mat4.Identity()
+            .scale(new Vec3(0.05, 0.05, 0.05))
+            .rotate(toRad(90), new Vec3(0, 1, 0))
+            .translate(new Vec3(-300, 0, -140))),
+    new Obj(
+        {
+            urls: {
+                obj: "../../assets/objs/road_items/cone/traffic_cone.obj",
+                texture: "../../assets/textures/road_items/cone/traffic cone_BaseColor.png",
+            },
+        }
+        , Mat4.Identity()
+            .scale(new Vec3(2, 2, 2))
+            .translate(new Vec3(0, 0, -45))),
+    new Obj(
+        {
+            urls: {
+                obj: "../../assets/objs/road_items/cone/traffic_cone.obj",
+                texture: "../../assets/textures/road_items/cone/traffic cone_BaseColor.png",
+            },
+        }
+        , Mat4.Identity()
+            .scale(new Vec3(2, 2, 2))
+            .translate(new Vec3(1, 0, -44))),
+    new Obj(
+        {
+            urls: {
+                obj: "../../assets/objs/road_items/cone/traffic_cone.obj",
+                texture: "../../assets/textures/road_items/cone/traffic cone_BaseColor.png",
+            },
+        }
+        , Mat4.Identity()
+            .scale(new Vec3(2, 2, 2))
+            .translate(new Vec3(-1.5, 0, -44.33))),
 ]
 
 export { objs };

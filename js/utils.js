@@ -9,7 +9,8 @@ export async function loadObj(url) {
 
     const text = await response.text();
     const obj = parseObj(text);
-
+    
+    logger.d(`Obj: Loaded ${url}`, false);
     return obj;
 }
 
@@ -87,7 +88,7 @@ function parseObj(/** @type {string} */text) {
         }
     });
 
-    console.log("Loaded objs:", objs);
+    console.log(rawData);
 
     return objs;
 }
@@ -117,7 +118,7 @@ export function loadTexture(/** @type {WebGLRenderingContext} */ gl, tex, source
 
                 gl.bindTexture(options.textureKind, null);
 
-                logger.d(`Texture: Loaded ${source}`);
+                logger.d(`Texture: Loaded ${source}`, false);
                 res();
             }
             image.onerror = () => {

@@ -1,6 +1,6 @@
 import { Mat4, MatrixStack, toRad, Vec3, Vec4 } from "https://cdn.jsdelivr.net/npm/webgl-basic-lib@latest/lib/all.min.js";
 import logger from "./logger.js";
-import { registerCamerasDropdown, registerSkyboxesDropdown } from "./main.js";
+import { registerCamerasDropdown } from "./main.js";
 import { objGroups, skyboxesGroup } from "./objs/index.js";
 
 const fpsDiv = document.getElementById('fps-counter');
@@ -9,7 +9,10 @@ export default class App {
     stack = new MatrixStack();
     cameras = [{
         name: "Stationary",
-        matrix: () => Mat4.LookAt(new Vec3(12, 6, 15), new Vec3(0, 0, 0), new Vec3(0, 1, 0))
+        matrix: () => Mat4.LookAt(new Vec3(40, 14, 50), new Vec3(0, 0, 0), new Vec3(0, 1, 0)),
+    }, {
+        name: "Behind the cones",
+        matrix: () => Mat4.LookAt(new Vec3(0, 1, -100), new Vec3(0, 0, 0), new Vec3(0, 1, 0)),
     }];
     currentCameraIndex = 0;
 
@@ -17,7 +20,6 @@ export default class App {
     constructor(gl) {
         /** @type {WebGLRenderingContext} */
         this.gl = gl;
-        // this.gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     }
 
     async run() {
@@ -38,7 +40,6 @@ export default class App {
         }
 
         registerCamerasDropdown(this);
-        registerSkyboxesDropdown(this, skyboxesGroup);
 
         const drawInterval = setInterval(() => {
             // const drawInterval = setTimeout(() => {

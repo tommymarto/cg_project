@@ -6,8 +6,6 @@ export class Ground extends Obj {
     async setup(/** @type {WebGLRenderingContext} */ gl) {
         await super.setup(gl, true);
 
-        console.log("asdf")
-
         this.texture = gl.createTexture();
         loadTexture(gl, this.texture, this.data.urls.texture, {
             textureKind: gl.TEXTURE_2D,
@@ -18,7 +16,7 @@ export class Ground extends Obj {
     }
 }
 
-const grassSize = 100;
+const grassSize = 200;
 const roadLength = grassSize;
 
 const ground = [

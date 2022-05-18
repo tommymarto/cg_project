@@ -41,24 +41,42 @@ export class Car extends Obj {
             name: "Chasing",
             matrix() {
                 const mat = getInstanceMatrix().clone();
-                const from = new Vec4(0, 7, 15, 1).transform(mat).toVec3();
+                const from = new Vec4(0, 4, 15, 1).transform(mat).toVec3();
                 const to = new Vec4(0, 0, 0, 1).transform(mat).toVec3();
+
+                return Mat4.LookAt(from, to, new Vec3(0, 1, 0))
+            },
+        }, {
+            name: "Car Front",
+            matrix() {
+                const mat = getInstanceMatrix().clone();
+                const from = new Vec4(0, 2, 1.5, 1).transform(mat).toVec3();
+                const to = new Vec4(0, 1, -15, 1).transform(mat).toVec3();
 
                 return Mat4.LookAt(from, to, new Vec3(0, 1, 0))
             }
         }]
 
+
         this.lights = [{
             name: "Headlight1",
             matrix() {
                 const mat = getInstanceMatrix().clone();
-                return Mat4.Translate(new Vec3(0, 5, -5)).multiply(mat);
+                return mat.translate(new Vec3(1, 0, 1));
+            },
+            kind: "spotlight",
+            data: {
+                intensity: 1,
             }
         }, {
             name: "Headlight2",
             matrix() {
                 const mat = getInstanceMatrix().clone();
-                return Mat4.Translate(new Vec3(0, 5, 5)).multiply(mat);
+                return mat.translate(new Vec3(-1, 0, 1));
+            },
+            kind: "spotlight",
+            data: {
+                intensity: 1,
             }
         }]
     }
@@ -77,7 +95,7 @@ const car = new Car(
             texture: "../../assets/textures/car/color.jpg",
         }
     },
-    Mat4.Identity().translate(new Vec3(7, 0, 7)),
+    Mat4.Identity().translate(new Vec3(0, 0, 85)).scale(new Vec3(1.5, 1.5, 1.5)),
     Mat4.Identity().rotate(toRad(180), new Vec3(0, 1, 0))
 );
 
