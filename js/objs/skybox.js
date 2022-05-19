@@ -4,6 +4,11 @@ import { loadTexture, zip } from "../utils.js";
 import logger from "../logger.js";
 
 export class Skybox extends Drawable {
+    constructor(data, name, mat = Mat4.Identity()) {
+        super(data, mat);
+        this.name = name;
+    }
+
     async setup(/** @type {WebGLRenderingContext} */ gl) {
         await super.setup(gl);
 
@@ -150,17 +155,28 @@ export class Skybox extends Drawable {
 }
 
 const skyboxes = [
-    // cube 1
+    // day
     new Skybox({
         urls: {
-            posx: "../../assets/textures/skybox/mountain/posx.jpg",
-            negx: "../../assets/textures/skybox/mountain/negx.jpg",
-            posy: "../../assets/textures/skybox/mountain/posy.jpg",
-            negy: "../../assets/textures/skybox/mountain/negy.jpg",
-            posz: "../../assets/textures/skybox/mountain/posz.jpg",
-            negz: "../../assets/textures/skybox/mountain/negz.jpg",
+            posx: "../../assets/textures/skybox/day/posx.jpg",
+            negx: "../../assets/textures/skybox/day/negx.jpg",
+            posy: "../../assets/textures/skybox/day/posy.jpg",
+            negy: "../../assets/textures/skybox/day/negy.jpg",
+            posz: "../../assets/textures/skybox/day/posz.jpg",
+            negz: "../../assets/textures/skybox/day/negz.jpg",
         },
-    }),
+    }, "Day"),
+    // night
+    new Skybox({
+        urls: {
+            posx: "../../assets/textures/skybox/night/posx.png",
+            negx: "../../assets/textures/skybox/night/negx.png",
+            posy: "../../assets/textures/skybox/night/posy.png",
+            negy: "../../assets/textures/skybox/night/negy.png",
+            posz: "../../assets/textures/skybox/night/posz.png",
+            negz: "../../assets/textures/skybox/night/negz.png",
+        },
+    }, "Night"),
 ]
 
 export { skyboxes };

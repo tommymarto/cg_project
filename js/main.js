@@ -79,28 +79,97 @@ function registerWindowResizeHandler(app) {
     })
 }
 
-export function registerCamerasDropdown(app) {
+export function registerCamerasDropdown(cameras) {
     const camerasDropdown = document.getElementById("cameras-dropdown");
-    app.cameras.forEach((camera, i) => {
+    cameras.values.forEach((camera, i) => {
         const option = document.createElement("option");
         option.innerText = camera.name;
 
         if (camera.name === "Chasing") {
             option.selected = true;
-            app.currentCameraIndex = i;
+            cameras.activeIndex = i;
         }
 
         camerasDropdown.appendChild(option);
     });
 
     camerasDropdown.addEventListener("change", () => {
-        app.currentCameraIndex = camerasDropdown.selectedIndex;
+        cameras.activeIndex = camerasDropdown.selectedIndex;
     });
 
     document.addEventListener("keydown", (e) => {
         if (e.key === "c") {
-            app.currentCameraIndex = (app.currentCameraIndex + 1) % app.cameras.length;
-            camerasDropdown.selectedIndex = app.currentCameraIndex;
+            cameras.activeIndex = (cameras.activeIndex + 1) % cameras.values.length;
+            camerasDropdown.selectedIndex = cameras.activeIndex;
         }
     })
+}
+
+export function registerSkyboxDropdown(skyboxGroup) {
+    const skyboxDropdown = document.getElementById("skybox-dropdown");
+    skyboxGroup.elements.forEach((skybox, i) => {
+        const option = document.createElement("option");
+        option.innerText = skybox.name;
+
+        if (skybox.name === "day") {
+            option.selected = true;
+            skyboxGroup.activeIndex = i;
+        }
+
+        skyboxDropdown.appendChild(option);
+    });
+
+    skyboxDropdown.addEventListener("change", () => {
+        skyboxGroup.activeIndex = skyboxDropdown.selectedIndex;
+    });
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "v") {
+            skyboxGroup.activeIndex = (skyboxGroup.activeIndex + 1) % skyboxGroup.elements.length;
+            skyboxDropdown.selectedIndex = skyboxGroup.activeIndex;
+        }
+    })
+}
+
+export function registerLightsOnOffHandler(lights) {
+    // const skyboxDropdown = document.getElementById("skybox-dropdown");
+    // app.cameras.forEach((camera, i) => {
+    //     const option = document.createElement("option");
+    //     option.innerText = camera.name;
+
+    //     if (camera.name === "day") {
+    //         option.selected = true;
+    //         skyboxGroup.currentSkyboxIndex = i;
+    //     }
+
+    //     skyboxDropdown.appendChild(option);
+    // });
+
+    // skyboxDropdown.addEventListener("change", () => {
+    //     skyboxGroup.currentSkyboxIndex = skyboxDropdown.selectedIndex;
+    // });
+
+    // document.addEventListener("keydown", (e) => {
+    //     if (e.key === "n") {
+    //         skyboxGroup.currentSkyboxIndex = (skyboxGroup.currentSkyboxIndex + 1) % skyboxGroup.cameras.length;
+    //         skyboxDropdown.selectedIndex = skyboxGroup.currentSkyboxIndex;
+    //     }
+    // })
+}
+
+export function registerNightMode(app) {
+    let isNight = false;
+    const nightButton = document.getElementById("night-button");
+    nightButton.addEventListener("click", () => {
+        console.log("asdf")
+        if (isNight) {
+            isNight = false;
+            // app.lights.ambient.activeIndex = app.lights.ambient.values.findIndex(light => light.name === "Night");
+            nightButton.children[0].innerHTML = "wb_sunny";
+        } else {
+            isNight = true;
+            // app.lights.ambient.activeIndex = app.lights.ambient.values.findIndex(light => light.name === "Day");
+            nightButton.children[0].innerHTML = "brightness_3";
+        }
+    });
 }
