@@ -23,10 +23,10 @@ export default class App {
         directional: {
             values: [{
                 name: "Day",
-                direction: new Vec3(0, -1, -1),
+                direction: new Vec3(1, -1, 1),
                 color: new Vec3(1, 1, 1),
                 ambient: 0.5,
-                diffuse: 0.9,
+                diffuse: 0.8,
                 specular: 0.1,
             },
             {

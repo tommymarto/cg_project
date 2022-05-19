@@ -195,7 +195,7 @@ export class Obj extends Drawable {
         float diff = max(dot(vNormal, lightDir), 0.0);
 
         vec3 reflectDir = reflect(-lightDir, vNormal);
-        float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+        float spec = pow(max(dot(viewDir, reflectDir), 0.0), 2.0);
 
         vec3 color = texture2D(uColorTexture, vTexCoord).rgb;
         vec3 ambient = light.ambient * color;
@@ -226,6 +226,7 @@ export class Obj extends Drawable {
         // }
         
         gl_FragColor = vec4(result, 1.0);
+        // gl_FragColor = vec4(vNormal, 1.0);
     }
     `
 
@@ -354,44 +355,44 @@ const objs = [
     new Obj(
         {
             urls: {
-                obj: "../../assets/objs/lights/streetlight/streetlight.obj",
-                texture: "../../assets/textures/lights/streetlight/color.jpg",
+                obj: "/assets/objs/lights/lamp_post/Street_Lamp_obj.obj",
+                texture: "/assets/textures/lights/lamp_post/lamba_DefaultMaterial_BaseColor.png",
             },
         }
         , Mat4.Identity()
-            .scale(new Vec3(0.05, 0.05, 0.05))
-            .rotate(toRad(90), new Vec3(0, 1, 0))
-            .translate(new Vec3(-300, 0, -140))),
-    new Obj(
-        {
-            urls: {
-                obj: "../../assets/objs/road_items/cone/traffic_cone.obj",
-                texture: "../../assets/textures/road_items/cone/traffic cone_BaseColor.png",
-            },
-        }
-        , Mat4.Identity()
-            .scale(new Vec3(2, 2, 2))
-            .translate(new Vec3(0, 0, -45))),
-    new Obj(
-        {
-            urls: {
-                obj: "../../assets/objs/road_items/cone/traffic_cone.obj",
-                texture: "../../assets/textures/road_items/cone/traffic cone_BaseColor.png",
-            },
-        }
-        , Mat4.Identity()
-            .scale(new Vec3(2, 2, 2))
-            .translate(new Vec3(1, 0, -44))),
-    new Obj(
-        {
-            urls: {
-                obj: "../../assets/objs/road_items/cone/traffic_cone.obj",
-                texture: "../../assets/textures/road_items/cone/traffic cone_BaseColor.png",
-            },
-        }
-        , Mat4.Identity()
-            .scale(new Vec3(2, 2, 2))
-            .translate(new Vec3(-1.5, 0, -44.33))),
+            .scale(new Vec3(3, 3, 3))
+            // .rotate(toRad(90), new Vec3(0, 1, 0))
+            .translate(new Vec3(-1.85, 0, 5.5))),
+    // new Obj(
+    //     {
+    //         urls: {
+    //             obj: "../../assets/objs/road_items/cone/traffic_cone.obj",
+    //             texture: "../../assets/textures/road_items/cone/traffic cone_BaseColor.png",
+    //         },
+    //     }
+    //     , Mat4.Identity()
+    //         .scale(new Vec3(2, 2, 2))
+    //         .translate(new Vec3(0, 0, -45))),
+    // new Obj(
+    //     {
+    //         urls: {
+    //             obj: "../../assets/objs/road_items/cone/traffic_cone.obj",
+    //             texture: "../../assets/textures/road_items/cone/traffic cone_BaseColor.png",
+    //         },
+    //     }
+    //     , Mat4.Identity()
+    //         .scale(new Vec3(2, 2, 2))
+    //         .translate(new Vec3(1, 0, -44))),
+    // new Obj(
+    //     {
+    //         urls: {
+    //             obj: "../../assets/objs/road_items/cone/traffic_cone.obj",
+    //             texture: "../../assets/textures/road_items/cone/traffic cone_BaseColor.png",
+    //         },
+    //     }
+    //     , Mat4.Identity()
+    //         .scale(new Vec3(2, 2, 2))
+    //         .translate(new Vec3(-1.5, 0, -44.33))),
 ]
 
 export { objs };
