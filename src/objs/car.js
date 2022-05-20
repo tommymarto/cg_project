@@ -37,56 +37,51 @@ export class Car extends Obj {
         }
     }
 
-    async setup(/** @type {WebGLRenderingContext} */ gl) {
-        await super.setup(gl);
+    cameras = [{
+        name: "Chasing",
+        matrix: () => {
+            const lookAt = Mat4.LookAt(new Vec3(0, 4, 15), new Vec3(0, 0, 0), new Vec3(0, 1, 0))
+            const mat = this.mat.clone().inverse();
 
-        this.cameras = [{
-            name: "Chasing",
-            matrix: () => {
-                const lookAt = Mat4.LookAt(new Vec3(0, 4, 15), new Vec3(0, 0, 0), new Vec3(0, 1, 0))
-                const mat = this.mat.clone().inverse();
+            return lookAt.apply(mat);
+        },
+    }, {
+        name: "Car Front",
+        matrix() {
+            const mat = this.mat.clone().inverse();
+            const from = new Vec4(0, 2, 1.5, 1).transform(mat).toVec3();
+            const to = new Vec4(0, 1, -15, 1).transform(mat).toVec3();
 
-                return lookAt.apply(mat);
-            },
-        }, {
-            name: "Car Front",
-            matrix() {
-                const mat = this.mat.clone().inverse();
-                const from = new Vec4(0, 2, 1.5, 1).transform(mat).toVec3();
-                const to = new Vec4(0, 1, -15, 1).transform(mat).toVec3();
+            return Mat4.LookAt(from, to, new Vec3(0, 1, 0))
+        }
+    }]
 
-                return Mat4.LookAt(from, to, new Vec3(0, 1, 0))
-            }
-        }]
-
-
-        this.lights = [{
-            name: "Headlight1",
-            matrix() {
-                const mat = getInstanceMatrix().clone();
-                return mat.translate(new Vec3(1, 0, 1));
-            },
-            kind: "spotlight",
-            data: {
-                intensity: 1,
-            }
-        }, {
-            name: "Headlight2",
-            matrix() {
-                const mat = getInstanceMatrix().clone();
-                return mat.translate(new Vec3(-1, 0, 1));
-            },
-            kind: "spotlight",
-            data: {
-                intensity: 1,
-            }
-        }]
-    }
+    lights = [{
+        name: "Headlight1",
+        matrix: () => {
+            const mat = getInstanceMatrix().clone();
+            return mat.translate(new Vec3(1, 0, 1));
+        },
+        kind: "spotlight",
+        data: {
+            intensity: 1,
+        }
+    }, {
+        name: "Headlight2",
+        matrix() {
+            const mat = getInstanceMatrix().clone();
+            return mat.translate(new Vec3(-1, 0, 1));
+        },
+        kind: "spotlight",
+        data: {
+            intensity: 1,
+        }
+    }]
 
     draw(/** @type {WebGLRenderingContext} */ gl, stack, camera) {
-        // this.mat.apply(this.modelDirection);
+        this.mat.apply(this.modelDirection);
         super.draw(gl, stack, camera);
-        // this.mat.apply(this.modelDirection.inverse());
+        this.mat.apply(this.modelDirection.inverse());
     }
 }
 

@@ -67,15 +67,22 @@ export class Skybox extends Drawable {
             gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
         ]
 
-        zip(Object.values(this.data.urls), targets).map(({ first: url, second: target }) => {
+        await Promise.all(zip(Object.values(this.data.urls), targets).map(({ first: url, second: target }) => {
             return loadTexture(gl, this.texture, url, {
                 textureKind: gl.TEXTURE_CUBE_MAP,
                 target,
             })
-        });
+        }));
+
+
+        this.isLoaded = true;
     }
 
     draw(/** @type {WebGLRenderingContext} */ gl, stack) {
+        if (!this.isLoaded) {
+            return;
+        }
+
         gl.useProgram(Skybox.programShader);
 
         // position

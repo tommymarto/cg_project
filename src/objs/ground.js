@@ -79,7 +79,7 @@ const ground = [
         urls: {
             texture: "../../assets/textures/ground/road/Road_001_basecolor.jpg",
         }
-    }, Mat4.Identity().scale(new Vec3(4, 1, roadLength / 2)).translate(new Vec3(0, 0.01, 0))),
+    }, Mat4.Identity().scale(new Vec3(4, 1, roadLength / 2)).translate(new Vec3(0, 0.05, 0))),
 ]
 
 export { ground };

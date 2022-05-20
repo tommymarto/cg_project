@@ -10,7 +10,7 @@ export class Obj extends Drawable {
     }
 
     async setup(/** @type {WebGLRenderingContext} */ gl, isChild = false) {
-        super.setup(gl);
+        await super.setup(gl);
 
         if (!isChild) {
             this.texture = gl.createTexture();
@@ -47,9 +47,15 @@ export class Obj extends Drawable {
                 await Promise.all(this.children.map(child => child.setup(gl, true)));
             }
         }
+
+        this.isLoaded = true;
     }
 
     draw(/** @type {WebGLRenderingContext} */ gl, stack, camera) {
+        if (!this.isLoaded) {
+            return;
+        }
+
         gl.useProgram(Obj.programShader);
 
         // position
@@ -345,7 +351,7 @@ const objs = [
         {
             urls: {
                 obj: "../../assets/objs/buildings/building1/Cottage_FREE.obj",
-                texture: "../../assets/textures/buildings/building1/Cottage_Dirt_Base_Color.png",
+                texture: "../../assets/textures/buildings/building1/Cottage_Dirt_Base_Color.jpg",
             },
         }
         , Mat4.Identity()

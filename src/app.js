@@ -59,15 +59,15 @@ export default class App {
 
         for (const obj of objGroups) {
             for (const el of obj.elements) {
-                console.log(obj)
-                await el.setup(this.gl)
+                console.log(el)
+                el.setup(this.gl)
                 if (el.cameras) {
                     this.cameras.values.push(...el.cameras);
                 }
             }
         }
         for (const skybox of skyboxesGroup.elements) {
-            await skybox.setup(this.gl);
+            skybox.setup(this.gl);
         }
 
         registerCamerasDropdown(this.cameras);
