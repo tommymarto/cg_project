@@ -121,7 +121,9 @@ export class Obj extends Drawable {
     uniform mat4 uMatModel;
     uniform mat4 uMatModelInverseTranspose;
     uniform mat4 uMatViewProjection;
+    uniform mat4 uMatLightSpaceViewProjection;
     varying vec3 vWorldSpacePosition;
+    varying vec3 vLightSpacePosition;
     
     // texture
     attribute vec2 aTexCoord;
@@ -135,6 +137,7 @@ export class Obj extends Drawable {
         vTexCoord = aTexCoord;
         vNormal = mat3(uMatModelInverseTranspose) * aNormal;
         vWorldSpacePosition = (uMatModel * vec4(aPosition, 1.0)).xyz;
+        vLightSpacePosition = (uMatLightSpaceViewProjection * vec4(vWorldSpacePosition, 1.0)).xyz;
         gl_Position = uMatViewProjection * uMatModel * vec4(aPosition, 1.0);
     }
     `;
@@ -181,6 +184,7 @@ export class Obj extends Drawable {
 
     // position
     varying vec3 vWorldSpacePosition;
+    varying vec3 vLightSpacePosition;
     
     // texture
     uniform sampler2D uColorTexture;
@@ -195,13 +199,18 @@ export class Obj extends Drawable {
     uniform PointLight uPointLight[N_POINTLIGHTS];
     uniform SpotLight uSpotLight[N_SPOTLIGHTS];
 
-    vec3 calculateDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir) {
+    float calculateShadow(vec3 vLightSpacePosition) {
+        return 0.0;
+    }
+
+    vec3 calculateDirectionalLight(DirectionalLight light, vec3 norm, vec3 viewDir) {
         vec3 lightDir = normalize(-uDirectionalLight.direction);
 
         float diff = max(dot(vNormal, lightDir), 0.0);
 
-        vec3 reflectDir = reflect(-lightDir, vNormal);
-        float spec = pow(max(dot(viewDir, reflectDir), 0.0), 2.0);
+        // vec3 reflectDir = reflect(-lightDir, norm);
+        vec3 halfwayDir = normalize(lightDir + viewDir); 
+        float spec = pow(max(dot(viewDir, halfwayDir), 0.0), 2.0);
 
         vec3 color = texture2D(uColorTexture, vTexCoord).rgb;
         vec3 ambient = light.ambient * color;
@@ -215,8 +224,9 @@ export class Obj extends Drawable {
 
         float diff = max(dot(norm, lightDir), 0.0);
 
-        vec3 reflectDir = reflect(-lightDir, norm);
-        float spec = pow(max(dot(viewDir, reflectDir), 0.0), 2.0);
+        // vec3 reflectDir = reflect(-lightDir, norm);
+        vec3 halfwayDir = normalize(lightDir + viewDir); 
+        float spec = pow(max(dot(viewDir, halfwayDir), 0.0), 2.0);
 
         float distance = length(light.position - worldSpacePosition);
         float attenuation = 1.0 / (1.0 + light.linear * distance + (light.quadratic * distance * distance));
@@ -236,8 +246,9 @@ export class Obj extends Drawable {
 
         float diff = max(dot(norm, lightDir), 0.0);
 
-        vec3 reflectDir = reflect(-lightDir, norm);
-        float spec = pow(max(dot(viewDir, reflectDir), 0.0), 2.0);
+        // vec3 reflectDir = reflect(-lightDir, norm);
+        vec3 halfwayDir = normalize(lightDir + viewDir); 
+        float spec = pow(max(dot(viewDir, halfwayDir), 0.0), 2.0);
 
         float distance = length(light.position - worldSpacePosition);
         float attenuation = 1.0 / (1.0 + light.linear * distance + (light.quadratic * distance * distance));
@@ -296,6 +307,7 @@ export class Obj extends Drawable {
                 Obj.uniformLocations.uMatModel = gl.getUniformLocation(program, "uMatModel");
                 Obj.uniformLocations.uMatModelInverseTranspose = gl.getUniformLocation(program, "uMatModelInverseTranspose");
                 Obj.uniformLocations.uMatViewProjection = gl.getUniformLocation(program, "uMatViewProjection");
+                Obj.uniformLocations.uMatLightSpaceViewProjection = gl.getUniformLocation(program, "uMatLightSpaceViewProjection");
                 Obj.uniformLocations.uColorTexture = gl.getUniformLocation(program, "uColorTexture");
 
                 Obj.uniformLocations.uViewPos = gl.getUniformLocation(program, "uViewPos");
