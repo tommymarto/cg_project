@@ -216,7 +216,8 @@ export default class App {
         // directional light view matrix
         const lightPosition = this.lights.directional.values[this.lights.directional.activeIndex].direction.clone().mul(-50);
         const lightView = Mat4.LookAt(lightPosition, new Vec3(0, 0, 0), new Vec3(0, 1, 0));
-        this.stack.push(lightView);
+
+        const lightViewProj = this.stack.push(lightView);
 
 
         this.gl.enable(this.gl.DEPTH_TEST);
@@ -280,7 +281,7 @@ export default class App {
         }
 
         for (const obj of objGroups) {
-            await obj.setupDraw(this.gl, actualLights);
+            await obj.setupDraw(this.gl, actualLights, lightViewProj, this.shadowFrameBuffer.depthTexture);
             obj.elements.forEach(el => el.draw(this.gl, this.stack, camera));
             obj.teardownDraw(this.gl);
         };

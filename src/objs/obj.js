@@ -123,7 +123,7 @@ export class Obj extends Drawable {
     uniform mat4 uMatViewProjection;
     uniform mat4 uMatLightSpaceViewProjection;
     varying vec3 vWorldSpacePosition;
-    varying vec3 vLightSpacePosition;
+    varying vec4 vLightSpacePosition;
     
     // texture
     attribute vec2 aTexCoord;
@@ -137,7 +137,7 @@ export class Obj extends Drawable {
         vTexCoord = aTexCoord;
         vNormal = mat3(uMatModelInverseTranspose) * aNormal;
         vWorldSpacePosition = (uMatModel * vec4(aPosition, 1.0)).xyz;
-        vLightSpacePosition = (uMatLightSpaceViewProjection * vec4(vWorldSpacePosition, 1.0)).xyz;
+        vLightSpacePosition = uMatLightSpaceViewProjection * vec4(vWorldSpacePosition, 1.0);
         gl_Position = uMatViewProjection * uMatModel * vec4(aPosition, 1.0);
     }
     `;
@@ -184,10 +184,11 @@ export class Obj extends Drawable {
 
     // position
     varying vec3 vWorldSpacePosition;
-    varying vec3 vLightSpacePosition;
+    varying vec4 vLightSpacePosition;
     
     // texture
     uniform sampler2D uColorTexture;
+    uniform sampler2D uShadowMap;
     varying vec2 vTexCoord;
     
     // normal
@@ -199,8 +200,17 @@ export class Obj extends Drawable {
     uniform PointLight uPointLight[N_POINTLIGHTS];
     uniform SpotLight uSpotLight[N_SPOTLIGHTS];
 
-    float calculateShadow(vec3 vLightSpacePosition) {
-        return 0.0;
+    float calculateShadow(vec4 lightSpacePosition) {
+        // perform perspective divide
+        vec3 projCoords = lightSpacePosition.xyz / lightSpacePosition.w;
+        projCoords = projCoords * 0.5 + 0.5; // map to [0, 1]
+        
+        float closestDepth = texture2D(uShadowMap, projCoords.xy).r;   
+        float currentDepth = projCoords.z;
+
+        float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
+
+        return shadow;
     }
 
     vec3 calculateDirectionalLight(DirectionalLight light, vec3 norm, vec3 viewDir) {
@@ -217,7 +227,9 @@ export class Obj extends Drawable {
         vec3 diffuse = light.diffuse * diff * color;
         vec3 specular = light.specular * spec * vec3(1, 1, 1);
 
-        return (ambient + diffuse + specular) * light.color;
+        float shadow = calculateShadow(vLightSpacePosition);
+
+        return (ambient + (1.0 - shadow) * (diffuse + specular)) * light.color;
     }
     vec3 calculatePointLight(PointLight light, vec3 norm, vec3 worldSpacePosition, vec3 viewDir) {
         vec3 lightDir = normalize(light.position - worldSpacePosition);
@@ -287,7 +299,7 @@ export class Obj extends Drawable {
     `;
 
     static uniformLocations = {}
-    static async setupDraw(/** @type {WebGLRenderingContext} */ gl, lights) {
+    static async setupDraw(/** @type {WebGLRenderingContext} */ gl, lights, lightViewProj, shadowMap) {
         await Drawable._setupDraw.bind(Obj)(gl,
             async () => {
                 Obj.fragmentShaderSource = `
@@ -308,8 +320,9 @@ export class Obj extends Drawable {
                 Obj.uniformLocations.uMatModelInverseTranspose = gl.getUniformLocation(program, "uMatModelInverseTranspose");
                 Obj.uniformLocations.uMatViewProjection = gl.getUniformLocation(program, "uMatViewProjection");
                 Obj.uniformLocations.uMatLightSpaceViewProjection = gl.getUniformLocation(program, "uMatLightSpaceViewProjection");
-                Obj.uniformLocations.uColorTexture = gl.getUniformLocation(program, "uColorTexture");
 
+                Obj.uniformLocations.uColorTexture = gl.getUniformLocation(program, "uColorTexture");
+                Obj.uniformLocations.uShadowMap = gl.getUniformLocation(program, "uShadowMap");
                 Obj.uniformLocations.uViewPos = gl.getUniformLocation(program, "uViewPos");
 
                 Obj.uniformLocations.uDirectionalLight = {}
@@ -353,6 +366,13 @@ export class Obj extends Drawable {
         gl.useProgram(Obj.programShader);
 
         // set uniforms
+        gl.uniformMatrix4fv(Obj.uniformLocations.uMatLightSpaceViewProjection, false, lightViewProj.values);
+
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, shadowMap);
+        gl.uniform1i(Obj.uniformLocations.uColorTexture, 1);
+
+
         gl.uniform3fv(Obj.uniformLocations.uDirectionalLight.direction, lights.directionalLight.direction.values);
         gl.uniform3fv(Obj.uniformLocations.uDirectionalLight.color, lights.directionalLight.color.values);
         gl.uniform1f(Obj.uniformLocations.uDirectionalLight.ambient, lights.directionalLight.ambient);
