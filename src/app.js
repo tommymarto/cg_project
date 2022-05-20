@@ -2,8 +2,37 @@ import { Mat4, MatrixStack, toRad, Vec3, Vec4 } from "webgl-basic-lib";
 import logger from "./logger.js";
 import { registerCamerasDropdown, registerSkyboxDropdown, registerLightsOnOffHandler, registerNightMode } from "./index.js";
 import { objGroups, skyboxesGroup } from "./objs/index.js";
+import { Point } from "./objs/point.js";
+import { keyboard } from "./keyboard.js";
 
 const fpsDiv = document.getElementById('fps-counter');
+
+
+const pointLightOff = {
+    name: "PointLightOff",
+    enabled: true,
+    position: () => new Vec3(0, 0, 0, 0),
+    color: new Vec3(1, 1, 1),
+    linear: 0.09,
+    quadratic: 0.032,
+    ambient: 0,
+    diffuse: 0,
+    specular: 0,
+}
+const spotLightOff = {
+    name: "SpotLightOff",
+    enabled: true,
+    position: () => new Vec3(0, 0, 0),
+    direction: () => new Vec3(0, 1, 0),
+    color: new Vec3(1, 1, 1),
+    cutOff: toRad(12),
+    outerCutOff: toRad(15),
+    linear: 0.09,
+    quadratic: 0.032,
+    ambient: 0,
+    diffuse: 0,
+    specular: 0,
+}
 
 export default class App {
     stack = new MatrixStack();
@@ -28,29 +57,40 @@ export default class App {
                 ambient: 0.5,
                 diffuse: 0.8,
                 specular: 0.1,
-            },
-            {
+            }, {
                 name: "Night",
+                direction: new Vec3(1, -1, 1),
+                color: new Vec3(1, 1, 1),
+                ambient: 0.005,
+                diffuse: 0.05,
+                specular: 0.01,
+            }, {
+                name: "No Light",
                 direction: new Vec3(0, -1, 0),
                 color: new Vec3(1, 1, 1),
-                ambient: 0.1,
-                diffuse: 0.8,
-                specular: 0.8,
+                ambient: 0,
+                diffuse: 0,
+                specular: 0,
             }],
-            activeIndex: 0,
+            activeIndex: 2,
         },
         pointLight: {
-            values: [],
+            values: [
+                pointLightOff,
+            ],
         },
         spotLight: {
             values: [],
         }
     }
+    skyboxes = skyboxesGroup;
 
 
     constructor(gl) {
         /** @type {WebGLRenderingContext} */
         this.gl = gl;
+        this.drawPoint = new Point();
+        this.drawPoint.setup(gl);
     }
 
     async run() {
@@ -64,14 +104,23 @@ export default class App {
                 if (el.cameras) {
                     this.cameras.values.push(...el.cameras);
                 }
+                if (el.lights?.directional) {
+                    this.lights.directional.values.push(...el.lights.directional);
+                }
+                if (el.lights?.pointLight) {
+                    this.lights.pointLight.values.push(...el.lights.pointLight);
+                }
+                if (el.lights?.spotLight) {
+                    this.lights.spotLight.values.push(...el.lights.spotLight);
+                }
             }
         }
-        for (const skybox of skyboxesGroup.elements) {
+        for (const skybox of this.skyboxes.elements) {
             skybox.setup(this.gl);
         }
 
         registerCamerasDropdown(this.cameras);
-        registerSkyboxDropdown(skyboxesGroup);
+        registerSkyboxDropdown(this.skyboxes);
         registerLightsOnOffHandler(this.lights);
         registerNightMode(this)
 
@@ -131,9 +180,9 @@ export default class App {
 
         // draw skybox
         this.stack.push(cameraWithoutTranslation);
-        await skyboxesGroup.setupDraw(this.gl);
-        skyboxesGroup.elements[skyboxesGroup.activeIndex].draw(this.gl, this.stack);
-        skyboxesGroup.teardownDraw(this.gl);
+        await this.skyboxes.setupDraw(this.gl);
+        this.skyboxes.elements[this.skyboxes.activeIndex].draw(this.gl, this.stack);
+        this.skyboxes.teardownDraw(this.gl);
         this.stack.pop();
 
         // draw objects
@@ -142,22 +191,35 @@ export default class App {
 
         const actualLights = {
             directionalLight: this.lights.directional.values[this.lights.directional.activeIndex],
-            pointLight: this.lights.pointLight.values.map(l => l.enabled ? l : {}),
-            spotLight: this.lights.spotLight.values.map(l => l.enabled ? l : {}),
+            pointLight: this.lights.pointLight.values.map(l => l.enabled ? l : pointLightOff).map(l => ({ ...l, position: l.position() })),
+            spotLight: this.lights.spotLight.values.map(l => l.enabled ? l : spotLightOff).map(l => ({ ...l, position: l.position(), direction: l.direction() })),
         }
 
 
         for (const obj of objGroups) {
             await obj.setupDraw(this.gl, actualLights);
-            // console.log(camera);
             obj.elements.forEach(el => el.draw(this.gl, this.stack, camera));
             obj.teardownDraw(this.gl);
         };
         this.gl.disable(this.gl.DEPTH_TEST);
 
-        // for(const light of this.lights.pointLight.values) {
-        //     this.gl.drawElements
-        // }
+        if (keyboard.isPressed('p')) {
+            const points = this.lights.pointLight.values.map(l => l.position().values)
+                .concat(this.lights.spotLight.values.map(l => l.position().values))
+                .flatMap(p => [...p]);
+
+            await Point.setupDraw(this.gl);
+            this.drawPoint.draw(this.gl, this.stack, points);
+            Point.teardownDraw(this.gl);
+        }
+        if (keyboard.isPressed('o')) {
+            const points = this.cameras.values.map(c => c.matrix().clone().inverse().col(3).toVec3().values)
+                .flatMap(p => [...p]);
+
+            await Point.setupDraw(this.gl);
+            this.drawPoint.draw(this.gl, this.stack, points);
+            Point.teardownDraw(this.gl);
+        }
 
         // pop camera and perspective
         this.stack.pop();

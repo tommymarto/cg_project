@@ -1,4 +1,4 @@
-import { Mat4, Vec3, toRad } from "webgl-basic-lib";
+import { Mat4, Vec4, Vec3, toRad } from "webgl-basic-lib";
 import { Drawable } from "../drawable.js";
 import { loadObj, loadTexture } from "../utils.js";
 import logger from "../logger.js";
@@ -192,8 +192,8 @@ export class Obj extends Drawable {
     // light
     uniform vec3 uViewPos;
     uniform DirectionalLight uDirectionalLight;
-    uniform PointLight uPointLight[1];
-    uniform SpotLight uSpotLight[1];
+    uniform PointLight uPointLight[N_POINTLIGHTS];
+    uniform SpotLight uSpotLight[N_SPOTLIGHTS];
 
     vec3 calculateDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir) {
         vec3 lightDir = normalize(-uDirectionalLight.direction);
@@ -208,14 +208,53 @@ export class Obj extends Drawable {
         vec3 diffuse = light.diffuse * diff * color;
         vec3 specular = light.specular * spec * vec3(1, 1, 1);
 
-        // return specular;
         return (ambient + diffuse + specular) * light.color;
     }
     vec3 calculatePointLight(PointLight light, vec3 norm, vec3 worldSpacePosition, vec3 viewDir) {
-        return vec3(0, 0, 0);
+        vec3 lightDir = normalize(light.position - worldSpacePosition);
+
+        float diff = max(dot(norm, lightDir), 0.0);
+
+        vec3 reflectDir = reflect(-lightDir, norm);
+        float spec = pow(max(dot(viewDir, reflectDir), 0.0), 2.0);
+
+        float distance = length(light.position - worldSpacePosition);
+        float attenuation = 1.0 / (1.0 + light.linear * distance + (light.quadratic * distance * distance));
+
+        vec3 color = texture2D(uColorTexture, vTexCoord).rgb;
+        vec3 ambient = light.ambient * color;
+        vec3 diffuse = light.diffuse * diff * color;
+        vec3 specular = light.specular * spec * vec3(1, 1, 1);
+        ambient *= attenuation;
+        diffuse *= attenuation;
+        specular *= attenuation;
+
+        return (ambient + diffuse + specular) * light.color;
     }
     vec3 calculateSpotLight(SpotLight light, vec3 norm, vec3 worldSpacePosition, vec3 viewDir) {
-        return vec3(0, 0, 0);
+        vec3 lightDir = normalize(light.position - worldSpacePosition);
+
+        float diff = max(dot(norm, lightDir), 0.0);
+
+        vec3 reflectDir = reflect(-lightDir, norm);
+        float spec = pow(max(dot(viewDir, reflectDir), 0.0), 2.0);
+
+        float distance = length(light.position - worldSpacePosition);
+        float attenuation = 1.0 / (1.0 + light.linear * distance + (light.quadratic * distance * distance));
+
+        float theta = dot(lightDir, normalize(-light.direction));
+        float epsilon = light.cutOff - light.outerCutOff;
+        float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
+
+        vec3 color = texture2D(uColorTexture, vTexCoord).rgb;
+        vec3 ambient = light.ambient * color;
+        vec3 diffuse = light.diffuse * diff * color;
+        vec3 specular = light.specular * spec * vec3(1, 1, 1);
+        ambient *= attenuation * intensity;
+        diffuse *= attenuation * intensity;
+        specular *= attenuation * intensity;
+
+        return (ambient + diffuse + specular) * light.color;
     }
 
     void main(void) {
@@ -224,12 +263,12 @@ export class Obj extends Drawable {
 
         vec3 result = vec3(0, 0, 0);
         result += calculateDirectionalLight(uDirectionalLight, norm, viewDir);
-        // for(int i = 0; i < N_POINTLIGHTS; i++) {
-        //     result += calculatePointLight(uPointLight[i], norm, vWorldSpacePosition, viewDir);
-        // }
-        // for(int i = 0; i < N_SPOTLIGHTS; i++) {
-        //     result += calculateSpotLight(uSpotLight[i], norm, vWorldSpacePosition, viewDir);
-        // }
+        for(int i = 0; i < N_POINTLIGHTS; i++) {
+            result += calculatePointLight(uPointLight[i], norm, vWorldSpacePosition, viewDir);
+        }
+        for(int i = 0; i < N_SPOTLIGHTS; i++) {
+            result += calculateSpotLight(uSpotLight[i], norm, vWorldSpacePosition, viewDir);
+        }
         
         gl_FragColor = vec4(result, 1.0);
         // gl_FragColor = vec4(vNormal, 1.0);
@@ -241,10 +280,12 @@ export class Obj extends Drawable {
         await Drawable._setupDraw.bind(Obj)(gl,
             async () => {
                 Obj.fragmentShaderSource = `
-                    #define N_POINTLIGHTS ${lights.pointLight.values.length}
-                    #define N_SPOTLIGHTS ${lights.spotLight.values.length}
+                    #define N_POINTLIGHTS ${lights.pointLight.length}
+                    #define N_SPOTLIGHTS ${lights.spotLight.length}
                     ${Obj.fragmentShaderSource}
-                `;
+                    `;
+
+                console.log(Obj.fragmentShaderSource);
             },
             async (/** @type {WebGLProgram} */ program) => {
                 gl.bindAttribLocation(program, 0, "aPosition");
@@ -334,6 +375,30 @@ export class Obj extends Drawable {
     }
 }
 
+const lampPost = new Obj(
+    {
+        urls: {
+            obj: "/assets/objs/lights/lamp_post/Street_Lamp_obj.obj",
+            texture: "/assets/textures/lights/lamp_post/lamba_DefaultMaterial_BaseColor.png",
+        },
+    }
+    , Mat4.Identity()
+        .scale(new Vec3(3, 3, 3))
+        .translate(new Vec3(-1.85, 0, 5.5)));
+lampPost.lights = {
+    pointLight: [{
+        name: "LampPost",
+        enabled: true,
+        position: () => new Vec4(0.35, 3, 0, 1).transform(lampPost.mat).toVec3(),
+        color: new Vec3(1, 1, 1),
+        linear: 0.003,
+        quadratic: 0.0032,
+        ambient: 0.1,
+        diffuse: 1,
+        specular: 0.5
+    }]
+}
+
 const objs = [
     // cube 1
     // new Obj(
@@ -358,17 +423,7 @@ const objs = [
             .scale(new Vec3(2, 2, 2))
             .rotate(toRad(90), new Vec3(0, 1, 0))
             .translate(new Vec3(0, 0, 10))),
-    new Obj(
-        {
-            urls: {
-                obj: "/assets/objs/lights/lamp_post/Street_Lamp_obj.obj",
-                texture: "/assets/textures/lights/lamp_post/lamba_DefaultMaterial_BaseColor.png",
-            },
-        }
-        , Mat4.Identity()
-            .scale(new Vec3(3, 3, 3))
-            // .rotate(toRad(90), new Vec3(0, 1, 0))
-            .translate(new Vec3(-1.85, 0, 5.5))),
+    lampPost,
     // new Obj(
     //     {
     //         urls: {

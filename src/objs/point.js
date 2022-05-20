@@ -4,7 +4,7 @@ import { loadObj, loadTexture } from "../utils.js";
 import logger from "../logger.js";
 
 export class Point extends Drawable {
-    draw(/** @type {WebGLRenderingContext} */ gl, points) {
+    draw(/** @type {WebGLRenderingContext} */ gl, stack, points) {
         gl.useProgram(Point.programShader);
 
         // position
@@ -13,18 +13,17 @@ export class Point extends Drawable {
         gl.enableVertexAttribArray(0);
         gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
 
+        // set uniforms
+        gl.uniformMatrix4fv(Point.uniformLocations.uMatViewProjection, false, stack.head().values);
+
         // draw
-        gl.drawArrays(gl[Point.glMode], 0, this.data.vertices.length / 3);
+        gl.drawArrays(gl[Point.glMode], 0, points.length / 3);
 
         // disable vertexAttribArray
         gl.disableVertexAttribArray(0);
 
         // unbind buffer
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-        if (this.children) {
-            this.children.forEach(child => child.draw(gl, stack));
-        }
     }
 
     static glMode = "POINTS";
@@ -48,11 +47,21 @@ export class Point extends Drawable {
     }
     `
 
-    static async setupDraw(/** @type {WebGLRenderingContext} */ gl, lights) {
-        await Drawable._setupDraw.bind(Point)(gl, async (/** @type {WebGLProgram} */ program) => {
-            gl.bindAttribLocation(program, 0, "aPosition");
-        });
+    static uniformLocations = {}
+    static async setupDraw(/** @type {WebGLRenderingContext} */ gl) {
+        await Drawable._setupDraw.bind(Point)(gl, null,
+            async (/** @type {WebGLProgram} */ program) => {
+                gl.bindAttribLocation(program, 0, "aPosition");
+            },
+            async (/** @type {WebGLProgram} */ program) => {
+                Point.uniformLocations.uMatViewProjection = gl.getUniformLocation(program, "uMatViewProjection");
+            }
+        );
 
         gl.useProgram(Point.programShader);
+    }
+
+    static teardownDraw(/** @type {WebGLRenderingContext} */ gl) {
+        gl.useProgram(null);
     }
 }

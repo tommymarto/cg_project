@@ -99,8 +99,8 @@ export function registerCamerasDropdown(cameras) {
 
     document.addEventListener("keydown", (e) => {
         if (e.key === "c") {
-            cameras.activeIndex = (cameras.activeIndex + 1) % cameras.values.length;
-            camerasDropdown.selectedIndex = cameras.activeIndex;
+            camerasDropdown.selectedIndex = (cameras.activeIndex + 1) % cameras.values.length;
+            camerasDropdown.dispatchEvent(new Event("change"));
         }
     })
 }
@@ -125,51 +125,131 @@ export function registerSkyboxDropdown(skyboxGroup) {
 
     document.addEventListener("keydown", (e) => {
         if (e.key === "v") {
-            skyboxGroup.activeIndex = (skyboxGroup.activeIndex + 1) % skyboxGroup.elements.length;
-            skyboxDropdown.selectedIndex = skyboxGroup.activeIndex;
+            skyboxDropdown.selectedIndex = (skyboxGroup.activeIndex + 1) % skyboxGroup.elements.length;
+            skyboxDropdown.dispatchEvent(new Event("change"));
         }
     })
 }
 
 export function registerLightsOnOffHandler(lights) {
-    // const skyboxDropdown = document.getElementById("skybox-dropdown");
-    // app.cameras.forEach((camera, i) => {
-    //     const option = document.createElement("option");
-    //     option.innerText = camera.name;
+    const directionalDropdown = document.getElementById("directional-dropdown");
+    const pointDropdown = document.getElementById("point-dropdown");
+    const spotDropdown = document.getElementById("spot-dropdown");
 
-    //     if (camera.name === "day") {
-    //         option.selected = true;
-    //         skyboxGroup.currentSkyboxIndex = i;
-    //     }
+    // directional lights
+    lights.directional.values.forEach((l, i) => {
+        const option = document.createElement("option");
+        option.innerText = l.name;
 
-    //     skyboxDropdown.appendChild(option);
-    // });
+        if (i == 0) {
+            option.selected = true;
+            lights.directional.activeIndex = i;
+        }
 
-    // skyboxDropdown.addEventListener("change", () => {
-    //     skyboxGroup.currentSkyboxIndex = skyboxDropdown.selectedIndex;
-    // });
+        directionalDropdown.appendChild(option);
+    });
 
-    // document.addEventListener("keydown", (e) => {
-    //     if (e.key === "n") {
-    //         skyboxGroup.currentSkyboxIndex = (skyboxGroup.currentSkyboxIndex + 1) % skyboxGroup.cameras.length;
-    //         skyboxDropdown.selectedIndex = skyboxGroup.currentSkyboxIndex;
-    //     }
-    // })
+    directionalDropdown.addEventListener("change", () => {
+        lights.directional.activeIndex = directionalDropdown.selectedIndex;
+    });
+
+    // point lights
+    pointDropdown.addEventListener("change", () => {
+        lights.pointLight.values.forEach(l => {
+            l.enabled = pointDropdown.selectedIndex == 0;
+        });
+    });
+
+    // spot lights
+    spotDropdown.addEventListener("change", () => {
+        lights.spotLight.values.forEach(l => {
+            l.enabled = spotDropdown.selectedIndex == 0;
+        });
+    });
+
+
+    // add key listeners for all lights
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "b") {
+            directionalDropdown.selectedIndex = (lights.directional.activeIndex + 1) % lights.directional.values.length;
+            directionalDropdown.dispatchEvent(new Event("change"));
+        }
+        if (e.key === "n") {
+            pointDropdown.selectedIndex = (pointDropdown.selectedIndex + 1) % 2;
+            pointDropdown.dispatchEvent(new Event("change"));
+        }
+        if (e.key === "m") {
+            spotDropdown.selectedIndex = (spotDropdown.selectedIndex + 1) % 2;
+            spotDropdown.dispatchEvent(new Event("change"));
+        }
+
+        // toggle headlights
+        if (e.key === "h") {
+            lights.spotLight.values.filter(l => ["HeadlightLeft", "HeadLightRight"].includes(l.name))
+                .forEach(l => {
+                    l.enabled = !l.enabled
+                });
+        }
+        // toggle car left directional lights
+        if (e.key === "k") {
+            lights.spotLight.values.filter(l => ["RearDirectionalLeft", "FrontDirectionalLeft"].includes(l.name))
+                .forEach(l => {
+                    l.on = !l.on
+                });
+        }
+        // toggle car right directional lights
+        if (e.key === "l") {
+            lights.spotLight.values.filter(l => ["RearDirectionalRight", "FrontDirectionalRight"].includes(l.name))
+                .forEach(l => {
+                    l.on = !l.on
+                });
+        }
+    })
+
 }
 
 export function registerNightMode(app) {
     let isNight = false;
     const nightButton = document.getElementById("night-button");
+    const skyboxDropdown = document.getElementById("skybox-dropdown");
+
     nightButton.addEventListener("click", () => {
-        console.log("asdf")
-        if (isNight) {
-            isNight = false;
-            // app.lights.ambient.activeIndex = app.lights.ambient.values.findIndex(light => light.name === "Night");
+        if (!isNight) {
+            isNight = true;
+            app.lights.directional.activeIndex = app.lights.directional.values.findIndex(light => light.name === "Night");
+            app.lights.spotLight.values.filter(l => ["HeadlightLeft", "HeadLightRight"].includes(l.name))
+                .forEach(l => {
+                    l.enabled = true;
+                });
+            app.lights.pointLight.values.filter(l => ["LampPost"].includes(l.name))
+                .forEach(l => {
+                    l.enabled = true;
+                });
+            skyboxDropdown.selectedIndex = app.skyboxes.elements.findIndex(s => s.name === "Night");
+            skyboxDropdown.dispatchEvent(new Event("change"));
+
             nightButton.children[0].innerHTML = "wb_sunny";
         } else {
-            isNight = true;
-            // app.lights.ambient.activeIndex = app.lights.ambient.values.findIndex(light => light.name === "Day");
+            isNight = false;
+            app.lights.directional.activeIndex = app.lights.directional.values.findIndex(light => light.name === "Day");
+            app.lights.spotLight.values.filter(l => ["HeadlightLeft", "HeadLightRight"].includes(l.name))
+                .forEach(l => {
+                    l.enabled = false;
+                });
+            app.lights.pointLight.values.filter(l => ["LampPost"].includes(l.name))
+                .forEach(l => {
+                    l.enabled = false;
+                });
+            skyboxDropdown.selectedIndex = app.skyboxes.elements.findIndex(s => s.name === "Day");
+            skyboxDropdown.dispatchEvent(new Event("change"));
+
             nightButton.children[0].innerHTML = "brightness_3";
+        }
+    });
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "x") {
+            nightButton.dispatchEvent(new Event("click"));
         }
     });
 }
