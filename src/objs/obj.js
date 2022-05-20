@@ -137,7 +137,7 @@ export class Obj extends Drawable {
         vWorldSpacePosition = (uMatModel * vec4(aPosition, 1.0)).xyz;
         gl_Position = uMatViewProjection * uMatModel * vec4(aPosition, 1.0);
     }
-    `
+    `;
 
     static fragmentShaderSource = `
     precision mediump float;
@@ -273,7 +273,7 @@ export class Obj extends Drawable {
         gl_FragColor = vec4(result, 1.0);
         // gl_FragColor = vec4(vNormal, 1.0);
     }
-    `
+    `;
 
     static uniformLocations = {}
     static async setupDraw(/** @type {WebGLRenderingContext} */ gl, lights) {
@@ -373,6 +373,103 @@ export class Obj extends Drawable {
     static teardownDraw(/** @type {WebGLRenderingContext} */ gl) {
         gl.useProgram(null);
     }
+
+
+    // alternative shader for shadow mapping
+    static shadowMappingVertexShaderSource = `
+        precision mediump float;
+
+        // position
+        attribute vec3 aPosition;
+        uniform mat4 uMatModel;
+        uniform mat4 uMatLightSpace;
+        
+        // varying vec3 vPos;
+
+        void main() {
+            // vPos = uMatLightSpace * uMatModel * vec4(aPosition, 1.0);
+            gl_Position = uMatLightSpace * uMatModel * vec4(aPosition, 1.0);
+        }
+    `;
+    static shadowMappingFragmentShaderSource = `
+        precision mediump float;
+
+        // varying vec3 vPos;
+
+        void main() {
+            gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
+            // gl_FragColor = vec4(vec3(vPos).z, 1.0);
+        }
+    `;
+
+    static shadowMappingProgramShader = null;
+    static shadowUniformLocations = {};
+    static async setupShadowDraw(/** @type {WebGLRenderingContext} */ gl) {
+        if (!Obj.shadowMappingProgramShader) {
+            // switch static shaders
+            Obj.drawProgramShader = Obj.programShader;
+            Obj.programShader = null;
+
+            Obj.drawVertexShaderSource = Obj.vertexShaderSource;
+            Obj.drawFragmentShaderSource = Obj.fragmentShaderSource;
+            Obj.vertexShaderSource = Obj.shadowMappingVertexShaderSource;
+            Obj.fragmentShaderSource = Obj.shadowMappingFragmentShaderSource;
+
+            console.log('shadow mapping', Obj.fragmentShaderSource, Obj.shadowMappingFragmentShaderSource);
+
+            await Drawable._setupDraw.bind(Obj)(gl, null,
+                async (/** @type {WebGLProgram} */ program) => {
+                    gl.bindAttribLocation(program, 0, "aPosition");
+                },
+                async (/** @type {WebGLProgram} */ program) => {
+                    Obj.shadowUniformLocations.uMatModel = gl.getUniformLocation(program, "uMatModel");
+                    Obj.shadowUniformLocations.uMatLightSpace = gl.getUniformLocation(program, "uMatLightSpace");
+                }
+            );
+
+            // switch static shaders back
+            Obj.shadowMappingProgramShader = Obj.programShader;
+            Obj.programShader = Obj.drawProgramShader;
+            Obj.vertexShaderSource = Obj.drawVertexShaderSource;
+            Obj.fragmentShaderSource = Obj.drawFragmentShaderSource;
+        }
+
+        gl.useProgram(Obj.shadowMappingProgramShader);
+    }
+
+    shadowDraw(/** @type {WebGLRenderingContext} */ gl, stack) {
+        if (!this.isLoaded) {
+            return;
+        }
+
+        gl.useProgram(Obj.shadowMappingProgramShader);
+
+        // position
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.position.value);
+        if (this.buffers.position.dirty) {
+            this.buffers.position.dirty = false;
+            gl.bufferData(gl.ARRAY_BUFFER, this.data.vertices, gl.STATIC_DRAW);
+        }
+        gl.enableVertexAttribArray(0);
+        gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+
+        // set uniforms
+        gl.uniformMatrix4fv(Obj.shadowUniformLocations.uMatModel, false, this.mat.values);
+        gl.uniformMatrix4fv(Obj.shadowUniformLocations.uMatLightSpace, false, stack.head().values);
+
+        // draw
+        gl.drawArrays(gl[Obj.glMode], 0, this.data.vertices.length / 3);
+
+        // disable vertexAttribArray
+        gl.disableVertexAttribArray(0);
+
+        // unbind buffer
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+        if (this.children) {
+            this.children.forEach(child => child.shadowDraw(gl, stack));
+        }
+    }
 }
 
 const lampPost = new Obj(
@@ -392,7 +489,7 @@ lampPost.lights = {
         position: () => new Vec4(0.35, 3, 0, 1).transform(lampPost.mat).toVec3(),
         color: new Vec3(1, 1, 1),
         linear: 0.003,
-        quadratic: 0.0032,
+        quadratic: 0.007,
         ambient: 0.1,
         diffuse: 1,
         specular: 0.5

@@ -6,6 +6,18 @@ const getWebGlContext = () => {
     if (!gl) {
         throw new Error("WebGL not available");
     }
+
+    gl.depth_ext = gl.getExtension('WEBGL_depth_texture');
+    if (!gl.depth_ext) {
+        throw new Error("need WEBGL_depth_texture");
+    }
+
+    // gl.frag_depth_ext = gl.getExtension('EXT_frag_depth');
+
+    // if (!gl.frag_depth_ext) {
+    //     throw new Error("need EXT_frag_depth");
+    // }
+
     return gl;
 }
 
@@ -47,13 +59,15 @@ function registerWindowResizeHandler(app) {
             canvas.classList.toggle("fullscreen");
             canvas.width = maxWidth;
             canvas.height = maxHeight;
-            app.gl.viewport(0, 0, maxWidth, maxHeight);
+            app.glViewport.width = maxWidth;
+            app.glViewport.height = maxHeight;
         } else if (isFullscreen) {
             isFullscreen = false;
             canvas.classList.toggle("fullscreen");
             canvas.width = initialWidth;
             canvas.height = initialHeight;
-            app.gl.viewport(0, 0, initialWidth, initialHeight);
+            app.glViewport.width = initialWidth;
+            app.glViewport.height = initialHeight;
         }
     }
 

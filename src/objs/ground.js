@@ -16,7 +16,7 @@ export class Ground extends Obj {
     }
 }
 
-const grassSize = 2000;
+const grassSize = 150;
 const roadLength = grassSize;
 
 const ground = [

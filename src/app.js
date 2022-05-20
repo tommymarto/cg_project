@@ -4,6 +4,8 @@ import { registerCamerasDropdown, registerSkyboxDropdown, registerLightsOnOffHan
 import { objGroups, skyboxesGroup } from "./objs/index.js";
 import { Point } from "./objs/point.js";
 import { keyboard } from "./keyboard.js";
+import { Orthogonal } from "./mat4extension.js";
+import { DebugTexture } from "./debugShader.js";
 
 const fpsDiv = document.getElementById('fps-counter');
 
@@ -85,12 +87,46 @@ export default class App {
     }
     skyboxes = skyboxesGroup;
 
+    glViewport = {
+        width: 1024,
+        height: 576
+    }
+
 
     constructor(gl) {
         /** @type {WebGLRenderingContext} */
         this.gl = gl;
         this.drawPoint = new Point();
         this.drawPoint.setup(gl);
+
+        this.shadowFrameBuffer = {
+            buffer: this.gl.createFramebuffer(),
+            depthTexture: this.gl.createTexture(),
+            unusedColorTexture: this.gl.createTexture(),
+            width: 1024,
+            height: 1024,
+        };
+
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.shadowFrameBuffer.depthTexture);
+        this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.DEPTH_COMPONENT, this.shadowFrameBuffer.width, this.shadowFrameBuffer.height, 0, this.gl.DEPTH_COMPONENT, this.gl.UNSIGNED_INT, null);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+
+        // for webgl1 compatibility reason, a color texture must also be attached to the framebuffer
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.shadowFrameBuffer.unusedColorTexture);
+        this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.shadowFrameBuffer.width, this.shadowFrameBuffer.height, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, null);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+
+        // attach it to the framebuffer
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.shadowFrameBuffer.buffer);
+        this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.DEPTH_ATTACHMENT, this.gl.TEXTURE_2D, this.shadowFrameBuffer.depthTexture, 0);
+        this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0, this.gl.TEXTURE_2D, this.shadowFrameBuffer.unusedColorTexture, 0);
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
     }
 
     async run() {
@@ -137,7 +173,11 @@ export default class App {
                     if (times.length > 2) {
                         last = times[times.length - 2]
                     }
-                    await this.#draw(now - last);
+
+                    // update objs and draw
+                    const dt = now - last;
+                    objGroups.forEach(objs => objs.elements.forEach(obj => obj.update(dt)));
+                    await this.#draw();
 
                     window.requestAnimationFrame(mainLoop);
                 } catch (err) {
@@ -158,9 +198,54 @@ export default class App {
         }, 250);
     }
 
-    async #draw(dt) {
-        objGroups.forEach(objs => objs.elements.forEach(obj => obj.update(dt)));
+    async #draw() {
+        // // shadow mapping
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.shadowFrameBuffer.buffer);
+        this.gl.viewport(0, 0, this.shadowFrameBuffer.width, this.shadowFrameBuffer.height);
+        this.gl.clearColor(1, 1, 1, 1);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
+        // config to view all map from directional light
+        // const orthogonal = Orthogonal(-110, 110, -110, 110, 30, 200)
+        // const lightPosition = this.lights.directional.values[this.lights.directional.activeIndex].direction.clone().mul(-70);
+
+        // orthogonal matrix for directional light
+        const orthogonal = Orthogonal(-50, 50, -50, 50, 0.1, 200)
+        this.stack.push(orthogonal);
+
+        // directional light view matrix
+        const lightPosition = this.lights.directional.values[this.lights.directional.activeIndex].direction.clone().mul(-50);
+        const lightView = Mat4.LookAt(lightPosition, new Vec3(0, 0, 0), new Vec3(0, 1, 0));
+        this.stack.push(lightView);
+
+
+        this.gl.enable(this.gl.DEPTH_TEST);
+
+        // actual draw shadow map
+        for (const obj of objGroups) {
+            await obj.setupShadowDraw(this.gl);
+            obj.elements.forEach(el => el.shadowDraw(this.gl, this.stack));
+            obj.teardownDraw(this.gl);
+        };
+
+        this.gl.disable(this.gl.DEPTH_TEST);
+
+        // re-bind the default framebuffer
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+        this.gl.viewport(0, 0, this.glViewport.width, this.glViewport.height);
+
+        // clean stack
+        this.stack.pop();
+        this.stack.pop();
+
+        // const debugTexture = new DebugTexture();
+        // debugTexture.setup(this.gl);
+        // await DebugTexture.setupDraw(this.gl);
+        // debugTexture.draw(this.gl, this.shadowFrameBuffer.depthTexture);
+        // return;
+
+        // draw scene
+        this.gl.viewport(0, 0, this.glViewport.width, this.glViewport.height);
         this.gl.clearColor(1, 1, 1, 1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
@@ -176,7 +261,6 @@ export default class App {
             ...camera.row(2).toVec3().toVec4(0).values,
             ...new Vec4(0, 0, 0, 1).values,
         ]);
-
 
         // draw skybox
         this.stack.push(cameraWithoutTranslation);
@@ -194,7 +278,6 @@ export default class App {
             pointLight: this.lights.pointLight.values.map(l => l.enabled ? l : pointLightOff).map(l => ({ ...l, position: l.position() })),
             spotLight: this.lights.spotLight.values.map(l => l.enabled ? l : spotLightOff).map(l => ({ ...l, position: l.position(), direction: l.direction() })),
         }
-
 
         for (const obj of objGroups) {
             await obj.setupDraw(this.gl, actualLights);

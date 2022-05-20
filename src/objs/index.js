@@ -9,18 +9,21 @@ const objGroups = [
         name: "car",
         setupDraw: Car.setupDraw,
         teardownDraw: Car.teardownDraw,
+        setupShadowDraw: Car.setupShadowDraw,
         elements: [car],
     },
     {
         name: "objs",
         setupDraw: Obj.setupDraw,
         teardownDraw: Obj.teardownDraw,
+        setupShadowDraw: Obj.setupShadowDraw,
         elements: [...objs],
     },
     {
         name: "ground",
         setupDraw: Ground.setupDraw,
         teardownDraw: Ground.teardownDraw,
+        setupShadowDraw: Ground.setupShadowDraw,
         elements: [...ground],
     },
 ];

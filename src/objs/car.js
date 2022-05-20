@@ -46,10 +46,7 @@ export class Car extends Obj {
                 light.enabled = movementSpeed > 0;
             });
 
-        function turnDirectionalLights(direction, state) {
-
-
-        }
+        console.log(this.mat.clone().col(3).toString(2));
     }
 
     cameras = [{
@@ -264,7 +261,7 @@ const car = new Car(
             texture: "../../assets/textures/car/color.jpg",
         }
     },
-    Mat4.Identity().translate(new Vec3(0, 0, 85)),
+    Mat4.Identity().translate(new Vec3(0, 0, 65)),
     Mat4.Identity().rotate(toRad(180), new Vec3(0, 1, 0))
 );
 
