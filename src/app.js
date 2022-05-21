@@ -1,7 +1,7 @@
 import { Mat4, MatrixStack, toRad, Vec3, Vec4 } from "webgl-basic-lib";
 import logger from "./logger.js";
 import { registerCamerasDropdown, registerSkyboxDropdown, registerLightsOnOffHandler, registerNightMode } from "./index.js";
-import { objGroups, skyboxesGroup } from "./objs/index.js";
+import { objGroups, skyboxesGroup, groundGroup } from "./objs/index.js";
 import { Point } from "./objs/point.js";
 import { keyboard } from "./keyboard.js";
 import { Orthogonal } from "./mat4extension.js";
@@ -54,21 +54,28 @@ export default class App {
         directional: {
             values: [{
                 name: "Day",
-                direction: new Vec3(1, -1, 1),
+                direction: new Vec3(1, -1.5, 1).normalize(),
+                color: new Vec3(1, 1, 1),
+                ambient: 0.5,
+                diffuse: 0.8,
+                specular: 0.1,
+            }, {
+                name: "Sunset",
+                direction: new Vec3(1, -0.5, 1).normalize(),
                 color: new Vec3(1, 1, 1),
                 ambient: 0.5,
                 diffuse: 0.8,
                 specular: 0.1,
             }, {
                 name: "Night",
-                direction: new Vec3(1, -1, 1),
+                direction: new Vec3(1, -1, 1).normalize(),
                 color: new Vec3(1, 1, 1),
                 ambient: 0.005,
                 diffuse: 0.05,
                 specular: 0.01,
             }, {
                 name: "No Light",
-                direction: new Vec3(0, -1, 0),
+                direction: new Vec3(1, -1, 1).normalize(),
                 color: new Vec3(1, 1, 1),
                 ambient: 0,
                 diffuse: 0,
@@ -103,8 +110,8 @@ export default class App {
             buffer: this.gl.createFramebuffer(),
             depthTexture: this.gl.createTexture(),
             unusedColorTexture: this.gl.createTexture(),
-            width: 1024,
-            height: 1024,
+            width: 4096,
+            height: 4096,
         };
 
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.shadowFrameBuffer.depthTexture);
@@ -150,6 +157,9 @@ export default class App {
                     this.lights.spotLight.values.push(...el.lights.spotLight);
                 }
             }
+        }
+        for (const ground of groundGroup.elements) {
+            ground.setup(this.gl);
         }
         for (const skybox of this.skyboxes.elements) {
             skybox.setup(this.gl);
@@ -199,26 +209,22 @@ export default class App {
     }
 
     async #draw() {
-        // // shadow mapping
+        // shadow mapping
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.shadowFrameBuffer.buffer);
         this.gl.viewport(0, 0, this.shadowFrameBuffer.width, this.shadowFrameBuffer.height);
         this.gl.clearColor(1, 1, 1, 1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+        this.gl.enable(this.gl.CULL_FACE);
+        this.gl.cullFace(this.gl.FRONT);
 
-        // config to view all map from directional light
-        // const orthogonal = Orthogonal(-110, 110, -110, 110, 30, 200)
-        // const lightPosition = this.lights.directional.values[this.lights.directional.activeIndex].direction.clone().mul(-70);
-
-        // orthogonal matrix for directional light
-        const orthogonal = Orthogonal(-50, 50, -50, 50, 0.1, 200)
+        // config to view all map from directional light in all conditions (day, sunset and night)
+        const orthogonal = Orthogonal(-58, 58, -58, 58, 0.1, 100)
         this.stack.push(orthogonal);
 
         // directional light view matrix
         const lightPosition = this.lights.directional.values[this.lights.directional.activeIndex].direction.clone().mul(-50);
         const lightView = Mat4.LookAt(lightPosition, new Vec3(0, 0, 0), new Vec3(0, 1, 0));
-
         const lightViewProj = this.stack.push(lightView);
-
 
         this.gl.enable(this.gl.DEPTH_TEST);
 
@@ -229,11 +235,22 @@ export default class App {
             obj.teardownDraw(this.gl);
         };
 
+        this.gl.disable(this.gl.CULL_FACE);
+        this.gl.cullFace(this.gl.FRONT);
+
+        await groundGroup.setupShadowDraw(this.gl);
+        groundGroup.elements.forEach(el => el.shadowDraw(this.gl, this.stack));
+        groundGroup.teardownDraw(this.gl);
+
         this.gl.disable(this.gl.DEPTH_TEST);
 
-        // re-bind the default framebuffer
+        // re-bind the default framebuffer and clear screen
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
         this.gl.viewport(0, 0, this.glViewport.width, this.glViewport.height);
+        this.gl.clearColor(1, 1, 1, 1);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+        this.gl.disable(this.gl.CULL_FACE);
+        this.gl.cullFace(this.gl.BACK);
 
         // clean stack
         this.stack.pop();
@@ -244,11 +261,6 @@ export default class App {
         // await DebugTexture.setupDraw(this.gl);
         // debugTexture.draw(this.gl, this.shadowFrameBuffer.depthTexture);
         // return;
-
-        // draw scene
-        this.gl.viewport(0, 0, this.glViewport.width, this.glViewport.height);
-        this.gl.clearColor(1, 1, 1, 1);
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
         // create perspective matrix
         const perspective = Mat4.Perspective(toRad(45), 16 / 9, 0.1, 1000);
@@ -285,6 +297,10 @@ export default class App {
             obj.elements.forEach(el => el.draw(this.gl, this.stack, camera));
             obj.teardownDraw(this.gl);
         };
+        await groundGroup.setupDraw(this.gl, actualLights, lightViewProj, this.shadowFrameBuffer.depthTexture);
+        groundGroup.elements.forEach(el => el.draw(this.gl, this.stack, camera));
+        groundGroup.teardownDraw(this.gl);
+
         this.gl.disable(this.gl.DEPTH_TEST);
 
         if (keyboard.isPressed('p')) {

@@ -41,7 +41,7 @@ export class DebugTexture extends Drawable {
     varying vec2 vTexCoord;
     
     void main(void) {
-        vTexCoord = aPosition.xy;
+        vTexCoord = aPosition.xy * 0.5 + 0.5;
         gl_Position = vec4(aPosition, 1.0);
     }
     `
@@ -52,7 +52,8 @@ export class DebugTexture extends Drawable {
     uniform sampler2D uTexture;
     
     void main(void) {
-        gl_FragColor = vec4(vec3(texture2D(uTexture, vTexCoord).r), 1.0);
+        float depth = texture2D(uTexture, vTexCoord).r;
+        gl_FragColor = vec4(vec3(depth), 1.0);
     }
     `
 

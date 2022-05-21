@@ -19,14 +19,15 @@ const objGroups = [
         setupShadowDraw: Obj.setupShadowDraw,
         elements: [...objs],
     },
-    {
-        name: "ground",
-        setupDraw: Ground.setupDraw,
-        teardownDraw: Ground.teardownDraw,
-        setupShadowDraw: Ground.setupShadowDraw,
-        elements: [...ground],
-    },
 ];
+
+const groundGroup = {
+    name: "ground",
+    setupDraw: Ground.setupDraw,
+    teardownDraw: Ground.teardownDraw,
+    setupShadowDraw: Ground.setupShadowDraw,
+    elements: [...ground],
+}
 
 const skyboxesGroup = {
     name: "skybox",
@@ -36,4 +37,4 @@ const skyboxesGroup = {
     activeIndex: 0,
 }
 
-export { objGroups, skyboxesGroup };
+export { objGroups, skyboxesGroup, groundGroup };

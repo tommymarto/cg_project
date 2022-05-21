@@ -45,8 +45,6 @@ export class Car extends Obj {
             .forEach(light => {
                 light.enabled = movementSpeed > 0;
             });
-
-        console.log(this.mat.clone().col(3).toString(2));
     }
 
     cameras = [{
@@ -252,6 +250,12 @@ export class Car extends Obj {
         super.draw(gl, stack, camera);
         this.mat.apply(this.modelDirection.inverse());
     }
+
+    shadowDraw(/** @type {WebGLRenderingContext} */ gl, stack) {
+        this.mat.apply(this.modelDirection);
+        super.shadowDraw(gl, stack);
+        this.mat.apply(this.modelDirection.inverse());
+    }
 }
 
 const car = new Car(
@@ -261,7 +265,7 @@ const car = new Car(
             texture: "../../assets/textures/car/color.jpg",
         }
     },
-    Mat4.Identity().translate(new Vec3(0, 0, 65)),
+    Mat4.Identity().rotate(toRad(180), new Vec3(0, 1, 0)).translate(new Vec3(0, 0, 30)),
     Mat4.Identity().rotate(toRad(180), new Vec3(0, 1, 0))
 );
 

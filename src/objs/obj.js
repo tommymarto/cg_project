@@ -200,7 +200,10 @@ export class Obj extends Drawable {
     uniform PointLight uPointLight[N_POINTLIGHTS];
     uniform SpotLight uSpotLight[N_SPOTLIGHTS];
 
-    float calculateShadow(vec4 lightSpacePosition) {
+    float calculateShadow(vec4 lightSpacePosition, vec3 norm, vec3 lightDir) {
+        float shadowBias = max(0.005 * (1.0 - dot(norm, lightDir)), 0.0005);
+        // float shadowBias = 0.0005;
+
         // perform perspective divide
         vec3 projCoords = lightSpacePosition.xyz / lightSpacePosition.w;
         projCoords = projCoords * 0.5 + 0.5; // map to [0, 1]
@@ -208,7 +211,7 @@ export class Obj extends Drawable {
         float closestDepth = texture2D(uShadowMap, projCoords.xy).r;   
         float currentDepth = projCoords.z;
 
-        float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
+        float shadow = currentDepth - shadowBias > closestDepth  ? 1.0 : 0.0;
 
         return shadow;
     }
@@ -227,7 +230,7 @@ export class Obj extends Drawable {
         vec3 diffuse = light.diffuse * diff * color;
         vec3 specular = light.specular * spec * vec3(1, 1, 1);
 
-        float shadow = calculateShadow(vLightSpacePosition);
+        float shadow = calculateShadow(vLightSpacePosition, norm, lightDir);
 
         return (ambient + (1.0 - shadow) * (diffuse + specular)) * light.color;
     }
@@ -370,7 +373,7 @@ export class Obj extends Drawable {
 
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, shadowMap);
-        gl.uniform1i(Obj.uniformLocations.uColorTexture, 1);
+        gl.uniform1i(Obj.uniformLocations.uShadowMap, 1);
 
 
         gl.uniform3fv(Obj.uniformLocations.uDirectionalLight.direction, lights.directionalLight.direction.values);
