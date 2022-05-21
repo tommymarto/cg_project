@@ -1,4 +1,4 @@
-import { Mat4, MatrixStack, toRad, Vec3, Vec4 } from "webgl-basic-lib";
+import { Mat4, MatrixStack, toRad, Vec2, Vec3, Vec4 } from "webgl-basic-lib";
 import logger from "./logger.js";
 import { registerCamerasDropdown, registerSkyboxDropdown, registerLightsOnOffHandler, registerNightMode } from "./index.js";
 import { objGroups, skyboxesGroup, groundGroup } from "./objs/index.js";
@@ -292,12 +292,17 @@ export default class App {
             spotLight: this.lights.spotLight.values.map(l => l.enabled ? l : spotLightOff).map(l => ({ ...l, position: l.position(), direction: l.direction() })),
         }
 
+        const shadowMap = {
+            texture: this.shadowFrameBuffer.depthTexture,
+            size: new Vec2(this.shadowFrameBuffer.width, this.shadowFrameBuffer.height),
+        }
+
         for (const obj of objGroups) {
-            await obj.setupDraw(this.gl, actualLights, lightViewProj, this.shadowFrameBuffer.depthTexture);
+            await obj.setupDraw(this.gl, actualLights, lightViewProj, shadowMap);
             obj.elements.forEach(el => el.draw(this.gl, this.stack, camera));
             obj.teardownDraw(this.gl);
         };
-        await groundGroup.setupDraw(this.gl, actualLights, lightViewProj, this.shadowFrameBuffer.depthTexture);
+        await groundGroup.setupDraw(this.gl, actualLights, lightViewProj, shadowMap);
         groundGroup.elements.forEach(el => el.draw(this.gl, this.stack, camera));
         groundGroup.teardownDraw(this.gl);
 

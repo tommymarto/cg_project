@@ -189,6 +189,7 @@ export class Obj extends Drawable {
     // texture
     uniform sampler2D uColorTexture;
     uniform sampler2D uShadowMap;
+    uniform vec2 uShadowMapSize;
     varying vec2 vTexCoord;
     
     // normal
@@ -211,7 +212,17 @@ export class Obj extends Drawable {
         float closestDepth = texture2D(uShadowMap, projCoords.xy).r;   
         float currentDepth = projCoords.z;
 
-        float shadow = currentDepth - shadowBias > closestDepth  ? 1.0 : 0.0;
+        float shadow = 0.0;
+        vec2 texelSize = 1.0 / uShadowMapSize;
+        for(int x = -1; x <= 1; ++x)
+        {
+            for(int y = -1; y <= 1; ++y)
+            {
+                float pcfDepth = texture2D(uShadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+                shadow += currentDepth - shadowBias > pcfDepth ? 1.0 : 0.0;        
+            }    
+        }
+        shadow /= 9.0;
 
         return shadow;
     }
@@ -297,7 +308,6 @@ export class Obj extends Drawable {
         }
         
         gl_FragColor = vec4(result, 1.0);
-        // gl_FragColor = vec4(vNormal, 1.0);
     }
     `;
 
@@ -326,6 +336,7 @@ export class Obj extends Drawable {
 
                 Obj.uniformLocations.uColorTexture = gl.getUniformLocation(program, "uColorTexture");
                 Obj.uniformLocations.uShadowMap = gl.getUniformLocation(program, "uShadowMap");
+                Obj.uniformLocations.uShadowMapSize = gl.getUniformLocation(program, "uShadowMapSize");
                 Obj.uniformLocations.uViewPos = gl.getUniformLocation(program, "uViewPos");
 
                 Obj.uniformLocations.uDirectionalLight = {}
@@ -372,9 +383,10 @@ export class Obj extends Drawable {
         gl.uniformMatrix4fv(Obj.uniformLocations.uMatLightSpaceViewProjection, false, lightViewProj.values);
 
         gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, shadowMap);
+        gl.bindTexture(gl.TEXTURE_2D, shadowMap.texture);
         gl.uniform1i(Obj.uniformLocations.uShadowMap, 1);
 
+        gl.uniform2fv(Obj.uniformLocations.uShadowMapSize, shadowMap.size.values);
 
         gl.uniform3fv(Obj.uniformLocations.uDirectionalLight.direction, lights.directionalLight.direction.values);
         gl.uniform3fv(Obj.uniformLocations.uDirectionalLight.color, lights.directionalLight.color.values);
