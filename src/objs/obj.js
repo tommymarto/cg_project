@@ -532,12 +532,12 @@ const lampPost = new Obj(
 lampPost.lights = {
     pointLight: [{
         name: "LampPost",
-        enabled: true,
+        enabled: false,
         position: () => new Vec4(0.35, 3, 0, 1).transform(lampPost.mat).toVec3(),
         color: new Vec3(1, 1, 1),
         linear: 0.003,
-        quadratic: 0.007,
-        ambient: 0.1,
+        quadratic: 0.07,
+        ambient: 0.9,
         diffuse: 1,
         specular: 0.5
     }]

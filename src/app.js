@@ -46,7 +46,7 @@ export default class App {
             matrix: () => Mat4.LookAt(new Vec3(40, 14, 50), new Vec3(0, 0, 0), new Vec3(0, 1, 0)),
         }, {
             name: "Behind the cones",
-            matrix: () => Mat4.LookAt(new Vec3(0, 1, -100), new Vec3(0, 0, 0), new Vec3(0, 1, 0)),
+            matrix: () => Mat4.LookAt(new Vec3(-30, 1, 0), new Vec3(0, 0, 0), new Vec3(0, 1, 0)),
         }],
         activeIndex: 0,
     }
@@ -62,7 +62,7 @@ export default class App {
             }, {
                 name: "Sunset",
                 direction: new Vec3(1, -0.5, 1).normalize(),
-                color: new Vec3(1, 1, 1),
+                color: new Vec3(1, 0.8, 0.8),
                 ambient: 0.5,
                 diffuse: 0.8,
                 specular: 0.1,
@@ -71,8 +71,8 @@ export default class App {
                 direction: new Vec3(1, -1, 1).normalize(),
                 color: new Vec3(1, 1, 1),
                 ambient: 0.005,
-                diffuse: 0.05,
-                specular: 0.01,
+                diffuse: 0.005,
+                specular: 0.005,
             }, {
                 name: "No Light",
                 direction: new Vec3(1, -1, 1).normalize(),
@@ -81,7 +81,7 @@ export default class App {
                 diffuse: 0,
                 specular: 0,
             }],
-            activeIndex: 2,
+            activeIndex: 0,
         },
         pointLight: {
             values: [
