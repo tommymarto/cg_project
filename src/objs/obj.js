@@ -138,6 +138,7 @@ export class Obj extends Drawable {
         vNormal = mat3(uMatModelInverseTranspose) * aNormal;
         vWorldSpacePosition = (uMatModel * vec4(aPosition, 1.0)).xyz;
         vLightSpacePosition = uMatLightSpaceViewProjection * vec4(vWorldSpacePosition, 1.0);
+        vLightSpacePosition = vec4(vLightSpacePosition.xyz + vNormal * 4.0 * (1.0 / 4096.0), 1.0);
         gl_Position = uMatViewProjection * uMatModel * vec4(aPosition, 1.0);
     }
     `;
@@ -202,8 +203,9 @@ export class Obj extends Drawable {
     uniform SpotLight uSpotLight[N_SPOTLIGHTS];
 
     float calculateShadow(vec4 lightSpacePosition, vec3 norm, vec3 lightDir) {
-        float shadowBias = max(0.005 * (1.0 - dot(norm, lightDir)), 0.0005);
-        // float shadowBias = 0.0005;
+        // float shadowBias = max(0.005 * (1.0 - dot(norm, lightDir)), 0.0005);
+        // float shadowBias = 0.001;
+        float shadowBias = 0.0;
 
         // perform perspective divide
         vec3 projCoords = lightSpacePosition.xyz / lightSpacePosition.w;
