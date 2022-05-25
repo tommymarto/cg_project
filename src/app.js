@@ -70,9 +70,9 @@ export default class App {
                 name: "Night",
                 direction: new Vec3(1, -1, 1).normalize(),
                 color: new Vec3(1, 1, 1),
-                ambient: 0.005,
-                diffuse: 0.005,
-                specular: 0.005,
+                ambient: 0.05,
+                diffuse: 0.01,
+                specular: 0.01,
             }, {
                 name: "No Light",
                 direction: new Vec3(1, -1, 1).normalize(),
