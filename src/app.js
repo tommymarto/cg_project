@@ -45,7 +45,7 @@ export default class App {
             name: "Stationary",
             matrix: () => Mat4.LookAt(new Vec3(40, 14, 50), new Vec3(0, 0, 0), new Vec3(0, 1, 0)),
         }, {
-            name: "Behind the cones",
+            name: "Side",
             matrix: () => Mat4.LookAt(new Vec3(-30, 1, 0), new Vec3(0, 0, 0), new Vec3(0, 1, 0)),
         }],
         activeIndex: 0,

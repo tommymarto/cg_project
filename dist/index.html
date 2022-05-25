@@ -14,9 +14,12 @@
         <div style="display: flex; flex-direction: row; margin-bottom: 10px;">
             <canvas id="canvas" style="border-style: solid; border-color: black; border-width: 1px;">
             </canvas>
-            <div style="display: flex; flex-direction: row; flex: 1; margin-top: 15px;">
+            <div style="display: flex; flex-direction: row; flex: 1; margin-top: 15px; overflow: scroll;">
                 <div
-                    style="width: 50%; display: flex; flex-direction: column; align-items: flex-end;margin-right: 5px;">
+                    style="width: 205px; display: flex; flex-direction: column; align-items: flex-end; margin-right: 5px; margin-left: 5px">
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                    </div>
                     <div
                         style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
                         Play/Pause:
@@ -45,8 +48,102 @@
                         style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
                         Spot Lights:
                     </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        Headlights:
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        Rear brake lights:
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        Car left direction indicators:
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        Car right direction indicators:
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        Show cameras positions:
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        Show lights positions:
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        Fullscreen:
+                    </div>
                 </div>
-                <div style="width: 50%; display: flex; flex-direction: column; margin-left: 5px;">
+                <div
+                    style="width: 130px; display: flex; flex-direction: column; align-items: center; margin-right: 5px;">
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        <h2 style="font-weight: bold;">Shortcut</h2>
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        x (toggle)
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        c (cycle through)
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        v (cycle through)
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        b (cycle through)
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        n (toggle)
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        m (toggle)
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        h (toggle)
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        j (keep pressed)
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        k (toggle)
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        l (toggle)
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        o (keep pressed)
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        p (keep pressed)
+                    </div>
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                        F11 (toggle)
+                    </div>
+                </div>
+                <div style="width: 130px; display: flex; flex-direction: column; margin-right: 5px;">
+                    <div
+                        style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
+                    </div>
                     <div
                         style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
                         <button id="run-button" style="width: 50px">
@@ -61,29 +158,29 @@
                     </div>
                     <div
                         style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
-                        <select id="cameras-dropdown" style="width: 150px">
+                        <select id="cameras-dropdown" style="width: 120px">
                         </select>
                     </div>
                     <div
                         style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
-                        <select id="skybox-dropdown" style="width: 150px">
+                        <select id="skybox-dropdown" style="width: 120px">
                         </select>
                     </div>
                     <div
                         style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
-                        <select id="directional-dropdown" style="width: 150px">
+                        <select id="directional-dropdown" style="width: 120px">
                         </select>
                     </div>
                     <div
                         style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
-                        <select id="point-dropdown" style="width: 150px">
+                        <select id="point-dropdown" style="width: 120px">
                             <option>On</option>
                             <option>Off</option>
                         </select>
                     </div>
                     <div
                         style="height: 40px; justify-content: center; align-content: center; display: flex; flex-direction: column;">
-                        <select id="spot-dropdown" style="width: 150px">
+                        <select id="spot-dropdown" style="width: 120px">
                             <option>On</option>
                             <option>Off</option>
                         </select>
